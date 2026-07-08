@@ -1,0 +1,57 @@
+<% content_for :title, @tour.title %>
+<%= turbo_stream_from @tour, channel: "DebugChannel" %>
+
+<%
+  index = @snapshot ? @snapshot[:index] : 0
+  total = @client&.history&.size.to_i
+  panel_locals = { tour: @tour, snapshot: @snapshot, index: index, total: total }
+%>
+
+<div class="flex h-[calc(100vh-9rem)] flex-col gap-3"
+     data-controller="scrubber"
+     data-scrubber-tour-value="<%= @tour.id %>"
+     data-scrubber-step-url-value="<%= step_tour_debug_session_path(@tour) %>"
+     data-scrubber-scrub-url-value="<%= scrub_tour_debug_session_path(@tour) %>">
+
+  <%# ── top bar: title + session controls ─────────────────────────── %>
+  <div class="flex items-center gap-3">
+    <div class="min-w-0">
+      <h1 class="truncate text-lg font-semibold"><%= @tour.title %></h1>
+      <p class="truncate text-xs text-slate-500"><%= @tour.entrypoint %><%= " · #{@tour.git_ref}" if @tour.git_ref.present? %></p>
+    </div>
+    <div id="session-status" class="ml-auto"><%= render "debug_sessions/status", tour: @tour, state: @tour.status %></div>
+  </div>
+
+  <div id="session-flash"></div>
+
+  <%# ── three panels ──────────────────────────────────────────────── %>
+  <div class="grid min-h-0 flex-1 grid-cols-12 gap-3">
+    <aside class="col-span-3 flex min-h-0 flex-col rounded-lg border border-slate-800 bg-slate-900/40">
+      <%= render "tours/waypoints", tour: @tour, waypoints: @waypoints %>
+    </aside>
+
+    <section class="col-span-6 min-h-0 overflow-hidden rounded-lg border border-slate-800 bg-slate-900/40">
+      <div id="source-panel" class="h-full overflow-y-auto">
+        <%= render "debug_sessions/source", **panel_locals %>
+      </div>
+    </section>
+
+    <aside class="col-span-3 flex min-h-0 flex-col gap-3">
+      <div class="min-h-0 flex-1 overflow-hidden rounded-lg border border-slate-800 bg-slate-900/40">
+        <div id="callstack-panel" class="h-full overflow-y-auto">
+          <%= render "debug_sessions/callstack", **panel_locals %>
+        </div>
+      </div>
+      <div class="min-h-0 flex-1 overflow-hidden rounded-lg border border-slate-800 bg-slate-900/40">
+        <div id="locals-panel" class="h-full overflow-y-auto">
+          <%= render "debug_sessions/locals", **panel_locals %>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <%# ── scrubber ──────────────────────────────────────────────────── %>
+  <div id="scrubber">
+    <%= render "debug_sessions/scrubber", **panel_locals %>
+  </div>
+</div>

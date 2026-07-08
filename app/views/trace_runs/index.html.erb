@@ -1,0 +1,46 @@
+<% content_for :title, "Trace runs" %>
+<div class="mx-auto max-w-4xl">
+  <div class="mb-4">
+    <h1 class="text-xl font-semibold">Execution traces</h1>
+    <p class="text-sm text-slate-400">
+      Full TracePoint recordings. Pick two to diff side by side.
+      Record more with <code class="text-sky-300">bin/rails trace:record</code>.
+    </p>
+  </div>
+
+  <% if @trace_runs.empty? %>
+    <div class="rounded-lg border border-dashed border-slate-700 p-10 text-center text-slate-400">
+      No traces yet. Run <code class="text-sky-300">bin/rails trace:record</code>.
+    </div>
+  <% else %>
+    <%= form_with url: nil, method: :get, id: "diff-picker", data: { controller: "trace-picker" } do %>
+      <ul class="divide-y divide-slate-800 rounded-lg border border-slate-800 bg-slate-900/40">
+        <% @trace_runs.each do |run| %>
+          <li class="flex items-center gap-3 px-4 py-3">
+            <div class="flex gap-1.5">
+              <label class="text-[11px] text-slate-500">before
+                <input type="radio" name="before_id" value="<%= run.id %>" data-action="trace-picker#update" class="accent-rose-500">
+              </label>
+              <label class="text-[11px] text-slate-500">after
+                <input type="radio" name="after_id" value="<%= run.id %>" data-action="trace-picker#update" class="accent-emerald-500">
+              </label>
+            </div>
+            <div class="min-w-0 flex-1">
+              <%= link_to run.label, trace_run_path(run), class: "font-medium text-slate-100 hover:text-sky-300" %>
+              <p class="truncate text-xs text-slate-500">
+                <%= run.entrypoint %> · <%= pluralize(run.event_count, "event") %>
+                <% if run.git_ref.present? %> · <%= run.git_ref %><% end %>
+              </p>
+            </div>
+          </li>
+        <% end %>
+      </ul>
+      <div class="mt-4">
+        <a data-trace-picker-target="link" href="#"
+           class="pointer-events-none rounded-md bg-slate-700 px-3 py-2 text-sm text-slate-400 opacity-50">
+          Select a before &amp; after to diff
+        </a>
+      </div>
+    <% end %>
+  <% end %>
+</div>

@@ -1,0 +1,39 @@
+<%# Center panel: diff-highlighted source at the stopped/focused line + narrative. %>
+<%
+  # Figure out what to show: a live snapshot's location, else the first waypoint.
+  focus_wp = if snapshot && snapshot[:waypoint_id]
+    tour.waypoints.find { |w| w.id == snapshot[:waypoint_id] }
+  else
+    tour.waypoints.first
+  end
+  abs_path   = snapshot ? snapshot[:file] : focus_wp&.absolute_path
+  focus_line = snapshot ? snapshot[:line] : focus_wp&.line
+  file_wps   = tour.waypoints.select { |w| w.absolute_path == abs_path }
+  lines      = source_window(abs_path, focus_line, waypoints: file_wps)
+  rel        = abs_path ? abs_path.sub("#{tour.repo_path}/", "") : "—"
+%>
+
+<div class="sticky top-0 z-10 flex items-center gap-2 border-b border-slate-800 bg-slate-900/90 px-3 py-2 backdrop-blur">
+  <span class="font-mono text-xs text-slate-300"><%= rel %><%= ":#{focus_line}" if focus_line %></span>
+  <% if snapshot %>
+    <span class="rounded bg-sky-500/20 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-sky-300"><%= snapshot[:reason] %></span>
+  <% end %>
+</div>
+
+<% if focus_wp&.note.present? %>
+  <div class="border-b border-slate-800 bg-slate-900/60 px-3 py-2">
+    <div class="mb-1 flex items-center gap-1.5">
+      <%= change_kind_badge(focus_wp.change_kind) %>
+      <span class="text-[11px] font-medium uppercase tracking-wide text-slate-500">Why this changed</span>
+    </div>
+    <p class="text-sm leading-snug text-slate-300"><%= focus_wp.note %></p>
+  </div>
+<% end %>
+
+<% if lines.any? %>
+  <pre class="overflow-x-auto py-2 text-xs leading-relaxed"><% lines.each do |line| %><div class="flex <%= source_line_classes(line) %>"><span class="w-12 shrink-0 select-none pr-3 text-right text-slate-600"><%= line.number %></span><code class="whitespace-pre pr-4 <%= "text-sky-100 font-medium" if line.current %>"><%= line.text.presence || " " %></code></div><% end %></pre>
+<% else %>
+  <div class="p-6 text-center text-sm text-slate-500">
+    <% if abs_path %>Could not read <span class="font-mono"><%= rel %></span>.<% else %>No source to display yet.<% end %>
+  </div>
+<% end %>

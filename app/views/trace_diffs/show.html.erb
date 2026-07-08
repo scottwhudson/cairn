@@ -1,0 +1,70 @@
+<% content_for :title, "Trace diff" %>
+<%
+  glyph = { "call" => "→", "return" => "←", "b_call" => "↦", "b_return" => "↤" }
+  side = ->(event, tone) do
+    next tag.div("", class: "w-1/2 px-3 py-1") if event.nil?
+    indent = 8 + event["depth"].to_i * 14
+    content_tag(:div, class: "w-1/2 px-3 py-1 #{tone}") do
+      concat content_tag(:span, glyph[event["event"]] || "·", class: "mr-1 text-slate-500")
+      concat content_tag(:span, event["method"], class: "font-mono", style: "padding-left:#{indent}px")
+      concat content_tag(:span, "#{event['file']}:#{event['line']}", class: "ml-2 font-mono text-[10px] text-slate-600")
+    end
+  end
+%>
+
+<div class="mx-auto max-w-6xl">
+  <div class="mb-4 flex flex-wrap items-center gap-3">
+    <h1 class="text-xl font-semibold">Trace diff</h1>
+    <span class="rounded bg-rose-500/20 px-2 py-0.5 text-xs text-rose-300">before: <%= @before.label %></span>
+    <span class="rounded bg-emerald-500/20 px-2 py-0.5 text-xs text-emerald-300">after: <%= @after.label %></span>
+    <div class="ml-auto flex gap-2 text-xs text-slate-400">
+      <span><%= @stats[:equal].to_i %> matched</span>
+      <span class="text-amber-300"><%= @stats[:locals_changed].to_i %> locals changed</span>
+      <span class="text-rose-300"><%= @stats[:removed].to_i %> removed</span>
+      <span class="text-emerald-300"><%= @stats[:added].to_i %> added</span>
+    </div>
+  </div>
+
+  <div class="overflow-hidden rounded-lg border border-slate-800 bg-slate-900/40">
+    <div class="flex border-b border-slate-800 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+      <div class="w-1/2 px-3 py-2">Before (<%= @before.git_ref || @before.label %>)</div>
+      <div class="w-1/2 border-l border-slate-800 px-3 py-2">After (<%= @after.git_ref || @after.label %>)</div>
+    </div>
+
+    <%# One scroll container; each step is one row, so the two sides stay aligned. %>
+    <div class="max-h-[70vh] overflow-y-auto font-mono text-xs">
+      <% @rows.each do |row| %>
+        <%
+          row_tone =
+            case row.op
+            when :added   then "bg-emerald-500/10"
+            when :removed then "bg-rose-500/10"
+            else row.changed_locals? ? "bg-amber-500/10" : ""
+            end
+        %>
+        <div class="flex items-stretch border-b border-slate-800/40 <%= row_tone %>">
+          <%= side.call(row.left,  row.op == :removed ? "text-rose-200" : "text-slate-300") %>
+          <div class="w-px bg-slate-800"></div>
+          <%= side.call(row.right, row.op == :added ? "text-emerald-200" : "text-slate-300") %>
+        </div>
+
+        <% if row.changed_locals? %>
+          <details class="border-b border-slate-800/40 bg-slate-950/40">
+            <summary class="cursor-pointer px-3 py-1 text-[11px] text-amber-300/80">
+              locals changed: <%= row.locals_diff.map { |d| d[:name] }.join(", ") %>
+            </summary>
+            <table class="w-full text-[11px]">
+              <% row.locals_diff.each do |d| %>
+                <tr>
+                  <td class="w-1/4 px-3 py-0.5 text-slate-400"><%= d[:name] %></td>
+                  <td class="w-1/2 px-3 py-0.5 text-rose-300 line-through decoration-rose-500/40"><%= d[:before] %></td>
+                  <td class="px-3 py-0.5 text-emerald-300"><%= d[:after] %></td>
+                </tr>
+              <% end %>
+            </table>
+          </details>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,23 @@
+<%# Right panel (bottom): live locals at the current step. %>
+<div class="sticky top-0 border-b border-slate-800 bg-slate-900/90 px-3 py-2">
+  <h2 class="text-xs font-semibold uppercase tracking-wide text-slate-400">Locals</h2>
+</div>
+
+<% locals = snapshot ? snapshot[:locals] : [] %>
+<% if locals.blank? %>
+  <p class="px-3 py-3 text-xs text-slate-500">No locals in scope.</p>
+<% else %>
+  <table class="w-full text-xs">
+    <tbody class="divide-y divide-slate-800/60">
+      <% locals.each do |var| %>
+        <tr class="align-top">
+          <td class="w-1/3 px-3 py-1.5 font-mono text-slate-300"><%= var[:name] %></td>
+          <td class="px-3 py-1.5">
+            <span class="font-mono break-all text-emerald-300"><%= truncate(var[:value].to_s, length: 120) %></span>
+            <% if var[:type].present? %><span class="ml-1 text-[10px] text-slate-600"><%= var[:type] %></span><% end %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% end %>

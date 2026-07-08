@@ -1,0 +1,22 @@
+<%# Right panel (top): breadcrumb call stack — why the changed method got invoked. %>
+<div class="sticky top-0 border-b border-slate-800 bg-slate-900/90 px-3 py-2">
+  <h2 class="text-xs font-semibold uppercase tracking-wide text-slate-400">Call stack</h2>
+</div>
+
+<% frames = snapshot ? snapshot[:frames] : [] %>
+<% if frames.blank? %>
+  <p class="px-3 py-3 text-xs text-slate-500">No active frame. Start a session and step to a waypoint.</p>
+<% else %>
+  <ol class="px-2 py-2 text-xs">
+    <% frames.each_with_index do |frame, i| %>
+      <% rel = frame[:file].to_s.sub("#{tour.repo_path}/", "") %>
+      <li class="flex items-baseline gap-2 rounded px-2 py-1 <%= i.zero? ? "bg-slate-800/60" : "" %>">
+        <span class="w-4 shrink-0 text-slate-600"><%= i.zero? ? "▶" : "" %></span>
+        <div class="min-w-0">
+          <div class="truncate font-medium text-slate-200"><%= frame[:name] %></div>
+          <div class="truncate font-mono text-[11px] text-slate-500"><%= rel %>:<%= frame[:line] %></div>
+        </div>
+      </li>
+    <% end %>
+  </ol>
+<% end %>

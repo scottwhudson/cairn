@@ -1,0 +1,34 @@
+<% content_for :title, "Tours" %>
+<div class="mx-auto max-w-5xl">
+  <div class="mb-6 flex items-center justify-between">
+    <div>
+      <h1 class="text-xl font-semibold">Tours</h1>
+      <p class="text-sm text-slate-400">Step through what a PR does at runtime, with narrative waypoints.</p>
+    </div>
+    <%= link_to "New tour", new_tour_path,
+          class: "rounded-md bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-500" %>
+  </div>
+
+  <% if @tours.empty? %>
+    <div class="rounded-lg border border-dashed border-slate-700 p-10 text-center text-slate-400">
+      No tours yet. Run <code class="text-sky-300">bin/rails db:seed</code> for a sample, or create one.
+    </div>
+  <% else %>
+    <ul class="divide-y divide-slate-800 rounded-lg border border-slate-800 bg-slate-900/40">
+      <% @tours.each do |tour| %>
+        <li class="flex items-center gap-4 px-4 py-3">
+          <div class="min-w-0 flex-1">
+            <%= link_to tour.title, tour, class: "font-medium text-slate-100 hover:text-sky-300" %>
+            <p class="truncate text-xs text-slate-500">
+              <%= tour.entrypoint %> · <%= pluralize(tour.waypoints.size, "waypoint") %>
+              <% if tour.git_ref.present? %> · <%= tour.git_ref %><% end %>
+            </p>
+          </div>
+          <span class="rounded-full bg-slate-800 px-2 py-0.5 text-xs text-slate-400"><%= tour.status %></span>
+          <%= button_to "Delete", tour, method: :delete, class: "text-xs text-slate-500 hover:text-rose-400",
+                form: { data: { turbo_confirm: "Delete this tour?" } } %>
+        </li>
+      <% end %>
+    </ul>
+  <% end %>
+</div>
