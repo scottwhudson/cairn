@@ -23,14 +23,13 @@ module Debug
     class Timeout < Error; end
 
     attr_reader :history, :capabilities, :state
-    attr_accessor :debuggee_pid  # rdbg process this client launched, for teardown
+    attr_accessor :repo_path  # source root for relative-path display in the UI
 
-    # waypoint_resolver: ->(abs_path, line) { waypoint_id_or_nil }
-    def initialize(host:, port:, logger: nil, waypoint_resolver: nil)
+    def initialize(host:, port:, logger: nil, repo_path: nil)
       @host = host
       @port = port
       @logger = logger
-      @waypoint_resolver = waypoint_resolver || ->(_f, _l) { nil }
+      @repo_path = repo_path
 
       @seq = 0
       @seq_lock = Mutex.new
@@ -95,8 +94,11 @@ module Debug
     def step_out = control("stepOut")
     def step_back = control("stepBack")
 
-    def terminate
-      request("terminate", {}, timeout: 3)
+    # Detach from the running server without killing it. We attached to a process
+    # the user is running (their Rails server), so we send DAP `disconnect` with
+    # terminateDebuggee:false and let it keep serving requests.
+    def detach
+      request("disconnect", { terminateDebuggee: false }, timeout: 3)
     rescue Error
       # adapter may already be gone
     ensure
@@ -108,17 +110,7 @@ module Debug
     rescue IOError
       # already closed
     ensure
-      kill_debuggee
       transition(:terminated) unless @state == :terminated
-    end
-
-    def kill_debuggee
-      return unless @debuggee_pid
-      Process.kill("TERM", @debuggee_pid)
-    rescue Errno::ESRCH, Errno::EPERM
-      # already gone
-    ensure
-      @debuggee_pid = nil
     end
 
     def snapshot(index)
@@ -251,7 +243,6 @@ module Debug
         line: top[:line],
         frames: frames,
         locals: locals_for(top[:id]),
-        waypoint_id: (@waypoint_resolver.call(top[:file], top[:line]) if top[:file]),
         at: Time.now.to_f
       }
     end

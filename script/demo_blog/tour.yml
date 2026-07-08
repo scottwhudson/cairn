@@ -1,0 +1,30 @@
+# Author-authored tour for the demo blog's root route. Imported into a Tour's
+# waypoints by TourImporter. Files are relative to this directory (repo_path).
+title: "Root route: load and render published articles"
+description: >
+  A walk through what GET "/" actually does: the controller reads published
+  articles from the database, the view renders each one, and the model's
+  `summary` post-processes every row. Step forward to watch the query run, then
+  scrub back through the per-article rendering loop.
+waypoints:
+  - file: app/controllers/articles_controller.rb
+    line: 6
+    change_kind: modified
+    note: >
+      The root action. `Article.published` builds an ActiveRecord relation but
+      hasn't hit the database yet — it's lazy. Step over to the next line to see
+      where the query actually fires.
+  - file: app/controllers/articles_controller.rb
+    line: 7
+    change_kind: modified
+    note: >
+      Calling `.size` materializes the relation, so the SELECT runs here. Inspect
+      `@articles` in the locals panel — the draft article is filtered out by the
+      `published` scope.
+  - file: app/models/article.rb
+    line: 14
+    change_kind: added
+    note: >
+      `summary` runs once per article while the view iterates. This is the best
+      spot to scrub forward/back through loop iterations — watch `text`, `limit`,
+      and `truncated` change for each post.

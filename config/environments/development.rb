@@ -55,9 +55,9 @@ Rails.application.configure do
   # Highlight code that enqueued background job in logs.
   config.active_job.verbose_enqueue_logs = true
 
-  # Run DebugSessionJob in-process (same process as Puma) so the live
-  # Debug::DapClient it parks in Debug::SessionRegistry — and the async
-  # ActionCable adapter's broadcasts — are visible to web requests.
+  # The live Debug::DapClient is created in the Puma web process and parked in
+  # Debug::SessionRegistry; its dispatcher thread broadcasts stop updates through
+  # the async ActionCable adapter (same process), so web requests see them.
   config.active_job.queue_adapter = :async
 
   # Highlight code that triggered redirect in logs.

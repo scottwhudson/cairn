@@ -29,3 +29,21 @@ end
 before_run, after_run = tour.trace_runs.order(:id).last(2)
 puts "Open tour:  http://localhost:3000/tours/#{tour.id}"
 puts "Trace diff: http://localhost:3000/trace_diffs/#{before_run&.id}/#{after_run&.id}"
+
+# --- Demo: trace a real Rails app's root route ------------------------------
+# script/demo_blog is a small, real Rails 8 app. Its trace_entry.rb boots the
+# app and dispatches an in-process GET "/", so the tracer captures the whole
+# router -> ArticlesController#index -> Article.published -> view render stack.
+blog_repo = Rails.root.join("script", "demo_blog").to_s
+
+blog_tour = Tour.find_or_initialize_by(entrypoint: "trace_entry.rb", repo_path: blog_repo)
+blog_tour.assign_attributes(
+  title: "Demo blog: root route",
+  description: "Step through GET \"/\" of a real Rails app: load published articles from Postgres and render them.",
+  git_ref: "main"
+)
+blog_tour.save!
+blog_imported = TourImporter.new(blog_tour).import(replace: true)
+
+puts "Seeded tour ##{blog_tour.id} '#{blog_tour.title}' with #{blog_imported} waypoint(s)."
+puts "Open blog tour: http://localhost:3000/tours/#{blog_tour.id}"

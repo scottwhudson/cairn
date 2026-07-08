@@ -1,13 +1,13 @@
 import { Controller } from "@hotwired/stimulus"
 
-// Drives the tour's debug session:
+// Drives the live debug session:
 //   * step buttons + keyboard fire fire-and-forget execution-control commands;
-//     the resulting `stopped` event is broadcast back over the tour's stream.
+//     the resulting `stopped` event is broadcast back over the session stream.
 //   * the range slider scrubs recorded history — a POST that re-renders the
 //     panels from a stored snapshot, without re-executing the debuggee.
 export default class extends Controller {
   static targets = ["slider", "position", "bar"]
-  static values = { tour: Number, stepUrl: String, scrubUrl: String }
+  static values = { stepUrl: String, scrubUrl: String }
 
   connect() {
     this.onKey = this.handleKey.bind(this)

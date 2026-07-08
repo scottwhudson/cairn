@@ -1,0 +1,11 @@
+<h1>Latest posts (<%= @count %>)</h1>
+
+<ul class="articles">
+  <% @articles.each do |article| %>
+    <li>
+      <h2><%= article.title %></h2>
+      <p class="byline"><%= article.byline %></p>
+      <p class="summary"><%= article.summary %></p>
+    </li>
+  <% end %>
+</ul>
