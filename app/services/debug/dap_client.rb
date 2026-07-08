@@ -57,7 +57,7 @@ module Debug
       @dispatcher = Thread.new { dispatch_loop }
 
       resp = request("initialize", {
-        clientID: "tour-of-changes", adapterID: "rdbg",
+        clientID: "interactive-debugger", adapterID: "rdbg",
         linesStartAt1: true, columnsStartAt1: true, pathFormat: "path",
         supportsRunInTerminalRequest: false
       }, timeout: timeout)

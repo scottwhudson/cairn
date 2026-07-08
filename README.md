@@ -1,43 +1,47 @@
-# Tour of Changes
+# Interactive Debugger
 
-An interactive **PR-review tool** that lets a reviewer step through what a change
-actually does *at runtime* — not just read the diff — by driving `rdbg` (Ruby's
-`debug` gem) over the Debug Adapter Protocol, with narrative "waypoints" pinned
-to the changed lines. See [`tour-of-changes-spec.md`](tour-of-changes-spec.md)
-for the full design.
+A browser-based debugger that **attaches to a running Ruby app** and lets you step
+through it live. It drives `rdbg` (Ruby's `debug` gem) over the Debug Adapter
+Protocol: set a breakpoint, trigger a request, then step through frames while
+inspecting the call stack, locals, and evaluating expressions in a REPL — all
+from the browser.
 
 ## What's here
 
-- **Live tour** — three panels + a scrubber:
-  - _left_: numbered waypoints (author-authored via `tour.yml`, or reviewer bookmarks)
-  - _center_: diff-highlighted source + the "why this changed" note
-  - _right_: call stack + live locals, updated per step
-  - _bottom_: scrubber — step forward / over / **back** (reverse execution via
-    rdbg record/replay) and scrub recorded stops without re-executing
-- **Execution-trace diffing** — record two full `TracePoint` traces and diff them
-  with a Myers/LCS alignment over *structural* tokens (method + call depth), so
-  shifted line numbers still match. Per-step locals diffs on expand.
+Three panels plus a REPL, driven over Turbo Streams:
+
+- _center_: source at the current frame, execution line highlighted
+- _right_: call stack + live locals (including instance vars), updated per stop.
+  Click a frame to inspect it; expand a structured local to drill into its children
+- _bottom_: step controls — continue / step over / step in / step out
+- _REPL_: evaluate an expression in the selected frame while stopped
+
+Forward stepping only — there is no recorded history or reverse execution.
 
 ## Architecture
 
 ```
-Browser (Turbo Streams over ActionCable + Stimulus scrubber)
+Browser (Turbo Streams over ActionCable + Stimulus stepper)
       │
-Rails controllers  +  DebugChannel (per-tour relay)
+DebugSessionsController  +  DebugChannel (Turbo Stream relay)
       │
-DebugSessionJob ── Debug::DapClient (plain-Ruby DAP over a socket)
-      │                     ▲ parked in Debug::SessionRegistry
-rdbg debuggee (the app under review, `rdbg --open`)
+Debug::DapClient (plain-Ruby DAP over a socket)
+      │  ▲ parked in Debug::SessionRegistry (process-global, single session)
+rdbg debuggee (the app under debug, started with `rdbg --open`)
 ```
 
-Key files: `app/services/debug/dap_client.rb`, `app/jobs/debug_session_job.rb`,
-`app/services/trace_differ.rb`, `lib/trace_recorder.rb`,
-`app/javascript/controllers/scrubber_controller.js`.
+The controller owns the debugger directly: on `create` it opens a `Debug::DapClient`,
+parks it in `Debug::SessionRegistry`, and wires callbacks that broadcast each stop
+to the `debug_session` Turbo Stream. Step actions look the client up and issue
+fire-and-forget execution commands; the resulting `stopped` event drives the UI.
+
+Key files: `app/controllers/debug_sessions_controller.rb`,
+`app/services/debug/dap_client.rb`, `app/services/debug/session_registry.rb`,
+`app/javascript/controllers/stepper_controller.js`.
 
 > **DAP notes** (rdbg 1.11.1): the client sends `attach {localfs: true}` so
-> breakpoints verify against local paths, and enables reverse debugging by
-> running `,record on` via an `evaluate` request at the first stop. Execution
-> commands are event-driven (fire-and-forget; the `stopped` event drives the UI).
+> breakpoints verify against local paths. Execution commands are event-driven
+> (fire-and-forget; the `stopped` event drives the UI).
 
 ## Running
 
@@ -45,28 +49,23 @@ Requires Ruby 4.0, PostgreSQL, and the `debug` gem (bundled — provides `rdbg`)
 
 ```bash
 bin/setup                 # or: bundle install && bin/rails db:prepare
-bin/rails db:seed         # seeds a sample tour + before/after traces
 bin/rails tailwindcss:build
 bin/dev                   # or: bin/rails server
 ```
 
-Then open the tour printed by the seed (e.g. <http://localhost:3000/tours/1>),
-click **Start session**, and use the scrubber / arrow keys (← back, → next hit,
-↓ step over) to walk the change. The trace diff is linked from the seed output
-and from **Trace runs**.
-
-The sample debuggee lives in [`script/sample_app/`](script/sample_app): a volume-
-discount pricing bug fix, with `pricing.rb` (after), `pricing_before.rb` (before),
-and an author-authored `tour.yml`.
+Start the app you want to debug under rdbg, e.g.:
 
 ```bash
-bin/rails trace:record    # re-record before/after execution traces
+rdbg --open --port 12345 --nonstop bin/rails server
 ```
+
+Then open <http://localhost:3000>, fill in the host/port (and optionally a
+breakpoint file + line and the debuggee's repo path for source display), click
+**Attach**, and trigger a request that hits the breakpoint.
 
 ## Notes / scope
 
-This is a POC. In development, `DebugSessionJob` runs in-process (`:async` adapter)
-so the live `Debug::DapClient` and the async ActionCable adapter share one process
-— `Debug::SessionRegistry` is in-memory and single-process by design. Auth and
-multi-process session supervision are left as future work (see the spec's open
-items).
+This is a POC. `Debug::SessionRegistry` is in-memory and holds a single session
+by design — the app itself persists no domain data. In development the async
+ActionCable adapter shares the one Rails process so broadcasts reach the browser
+without extra infra. Auth and multi-session supervision are left as future work.
