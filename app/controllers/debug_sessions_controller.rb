@@ -6,17 +6,17 @@ class DebugSessionsController < ApplicationController
     "continue"  => :continue,
     "next"      => :step_over,
     "step_in"   => :step_in,
-    "step_out"  => :step_out,
-    "step_back" => :step_back
+    "step_out"  => :step_out
   }.freeze
 
-  # partial name => dom id it replaces
+  # partial name => dom id it replaces. All are re-rendered on every stop, and
+  # blanked when execution resumes.
   PANELS = { "source" => "source-panel", "callstack" => "callstack-panel",
-             "locals" => "locals-panel", "scrubber" => "scrubber" }.freeze
+             "locals" => "locals-panel" }.freeze
 
   def show
     @client = Debug::SessionRegistry.get
-    @snapshot = @client&.history&.last
+    @snapshot = @client&.snapshot
   end
 
   # Attach to a running rdbg DAP server (e.g. a Rails server started with
@@ -56,16 +56,16 @@ class DebugSessionsController < ApplicationController
     head :accepted
   end
 
-  # Scrub: re-render the panels from an already-recorded stop, no re-execution.
-  def scrub
+  # Inspect a different frame of the current stop: re-render the source, locals
+  # and call-stack panels focused on the chosen frame. No re-execution — the
+  # snapshot already carries every frame's locals.
+  def select_frame
     client = require_client!
-    return head(:unprocessable_entity) unless client
-
-    index = params[:index].to_i.clamp(0, [ client.history.size - 1, 0 ].max)
-    snapshot = client.snapshot(index)
+    snapshot = client&.snapshot
     return head(:no_content) unless snapshot
 
-    render turbo_stream: panel_streams(client, snapshot, index)
+    frame_index = params[:frame].to_i.clamp(0, [ snapshot[:frames].size - 1, 0 ].max)
+    render turbo_stream: panel_streams(client, snapshot, frame_index)
   end
 
   def destroy
@@ -108,25 +108,33 @@ class DebugSessionsController < ApplicationController
 
   def wire_callbacks(client)
     client.on_stop  { |snap| broadcast_stop(client, snap) }
-    client.on_state { |state| broadcast_state(state) }
+    client.on_state { |state| broadcast_state(client, state) }
     client.on_error { |cmd, msg| broadcast_flash("#{cmd} failed: #{msg}") }
   end
 
   # --- broadcasting ----------------------------------------------------------
 
   def broadcast_stop(client, snapshot)
-    panel_locals(client, snapshot, snapshot[:index]).each do |partial, locals|
+    broadcast_panels(client, snapshot)
+  end
+
+  def broadcast_state(client, state)
+    Debug::SessionRegistry.clear if state == :terminated
+    # Execution resumed or ended: blank the panels so they don't keep showing the
+    # frame we just left. A following `stopped` repopulates them.
+    broadcast_panels(client, nil) if %i[running terminated].include?(state)
+    Turbo::StreamsChannel.broadcast_replace_to(
+      STREAM, target: "session-status", partial: "debug_sessions/status", locals: { state: state }
+    )
+  end
+
+  # Broadcast every panel from a snapshot (nil snapshot => empty/reset state).
+  def broadcast_panels(client, snapshot)
+    panel_locals(client, snapshot).each do |partial, locals|
       Turbo::StreamsChannel.broadcast_replace_to(
         STREAM, target: PANELS[partial], partial: "debug_sessions/#{partial}", locals: locals
       )
     end
-  end
-
-  def broadcast_state(state)
-    Debug::SessionRegistry.clear if state == :terminated
-    Turbo::StreamsChannel.broadcast_replace_to(
-      STREAM, target: "session-status", partial: "debug_sessions/status", locals: { state: state }
-    )
   end
 
   def broadcast_flash(message)
@@ -135,14 +143,15 @@ class DebugSessionsController < ApplicationController
     )
   end
 
-  # { "source" => {locals}, ... } for each panel partial.
-  def panel_locals(client, snapshot, index)
-    base = { repo_path: client.repo_path, snapshot: snapshot, index: index, total: client.history.size }
+  # { "source" => {locals}, ... } for each panel partial. frame_index selects
+  # which frame the source/locals/callstack panels focus on (0 = top of stack).
+  def panel_locals(client, snapshot, frame_index = 0)
+    base = { repo_path: client.repo_path, snapshot: snapshot, frame_index: frame_index }
     PANELS.keys.index_with { base }
   end
 
-  def panel_streams(client, snapshot, index)
-    panel_locals(client, snapshot, index).map do |partial, locals|
+  def panel_streams(client, snapshot, frame_index = 0)
+    panel_locals(client, snapshot, frame_index).map do |partial, locals|
       turbo_stream.replace(PANELS[partial], partial: "debug_sessions/#{partial}", locals: locals)
     end
   end

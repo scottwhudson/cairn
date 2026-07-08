@@ -2,18 +2,16 @@
 <%= turbo_stream_from "debug_session", channel: "DebugChannel" %>
 
 <%
-  active   = @client.present?
-  snapshot = @snapshot
-  index    = snapshot ? snapshot[:index] : 0
-  total    = @client&.history&.size.to_i
+  active    = @client.present?
+  snapshot  = @snapshot
   repo_path = @client&.repo_path
-  panel_locals = { repo_path: repo_path, snapshot: snapshot, index: index, total: total }
+  panel_locals = { repo_path: repo_path, snapshot: snapshot, frame_index: 0 }
 %>
 
 <div class="flex h-[calc(100vh-9rem)] flex-col gap-3"
-     data-controller="scrubber"
-     data-scrubber-step-url-value="<%= step_debug_session_path %>"
-     data-scrubber-scrub-url-value="<%= scrub_debug_session_path %>">
+     data-controller="stepper"
+     data-stepper-step-url-value="<%= step_debug_session_path %>"
+     data-stepper-select-frame-url-value="<%= select_frame_debug_session_path %>">
 
   <%# ── top bar: title + session controls ─────────────────────────── %>
   <div class="flex items-center gap-3">
@@ -52,8 +50,6 @@
     </aside>
   </div>
 
-  <%# ── scrubber ──────────────────────────────────────────────────── %>
-  <div id="scrubber">
-    <%= render "debug_sessions/scrubber", **panel_locals %>
-  </div>
+  <%# ── controls ──────────────────────────────────────────────────── %>
+  <%= render "debug_sessions/controls" %>
 </div>

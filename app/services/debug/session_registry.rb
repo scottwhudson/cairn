@@ -3,7 +3,7 @@ module Debug
   #
   # The controller attaches a client to a running rdbg DAP server and parks it
   # here; the reader/dispatcher threads it owns keep running after the request
-  # returns. Later step/scrub actions look the client back up to drive it. This
+  # returns. Later step actions look the client back up to drive it. This
   # is a single-process POC convenience (dev's async ActionCable adapter shares
   # the web process, so the client's broadcasts reach the browser).
   module SessionRegistry

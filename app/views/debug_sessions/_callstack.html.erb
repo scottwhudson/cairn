@@ -1,21 +1,29 @@
-<%# Right panel (top): call stack at the current stop. %>
-<div class="sticky top-0 border-b border-slate-800 bg-slate-900/90 px-3 py-2">
+<%# Right panel (top): call stack at the current stop. Click a frame to inspect it. %>
+<div class="sticky top-0 z-10 border-b border-slate-800 bg-slate-900/90 px-3 py-2">
   <h2 class="text-xs font-semibold uppercase tracking-wide text-slate-400">Call stack</h2>
 </div>
 
-<% frames = snapshot ? snapshot[:frames] : [] %>
+<%
+  frames   = snapshot ? snapshot[:frames] : []
+  selected = local_assigns.fetch(:frame_index, 0).to_i
+%>
 <% if frames.blank? %>
   <p class="px-3 py-3 text-xs text-slate-500">No active frame. Attach and step to a breakpoint.</p>
 <% else %>
   <ol class="px-2 py-2 text-xs">
     <% frames.each_with_index do |frame, i| %>
       <% rel = repo_path.present? ? frame[:file].to_s.sub("#{repo_path}/", "") : frame[:file].to_s %>
-      <li class="flex items-baseline gap-2 rounded px-2 py-1 <%= i.zero? ? "bg-slate-800/60" : "" %>">
-        <span class="w-4 shrink-0 text-slate-600"><%= i.zero? ? "▶" : "" %></span>
-        <div class="min-w-0">
-          <div class="truncate font-medium text-slate-200"><%= frame[:name] %></div>
-          <div class="truncate font-mono text-[11px] text-slate-500"><%= rel %>:<%= frame[:line] %></div>
-        </div>
+      <li>
+        <button type="button"
+                data-action="stepper#selectFrame"
+                data-stepper-frame-param="<%= i %>"
+                class="flex w-full items-baseline gap-2 rounded px-2 py-1 text-left <%= i == selected ? "bg-slate-800" : "hover:bg-slate-800/50" %>">
+          <span class="w-4 shrink-0 text-sky-400"><%= "▶" if i == selected %></span>
+          <div class="min-w-0">
+            <div class="truncate font-medium <%= i == selected ? "text-slate-100" : "text-slate-300" %>"><%= frame[:name] %></div>
+            <div class="truncate font-mono text-[11px] text-slate-500"><%= rel %>:<%= frame[:line] %></div>
+          </div>
+        </button>
       </li>
     <% end %>
   </ol>

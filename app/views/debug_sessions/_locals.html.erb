@@ -1,9 +1,13 @@
-<%# Right panel (bottom): live locals at the current step. %>
-<div class="sticky top-0 border-b border-slate-800 bg-slate-900/90 px-3 py-2">
+<%# Right panel (bottom): locals for the selected frame (top frame by default). %>
+<div class="sticky top-0 z-10 border-b border-slate-800 bg-slate-900/90 px-3 py-2">
   <h2 class="text-xs font-semibold uppercase tracking-wide text-slate-400">Locals</h2>
 </div>
 
-<% locals = snapshot ? snapshot[:locals] : [] %>
+<%
+  frame_index = local_assigns.fetch(:frame_index, 0).to_i
+  frame  = snapshot && snapshot[:frames] && snapshot[:frames][frame_index]
+  locals = frame ? frame[:locals] : (snapshot ? snapshot[:locals] : [])
+%>
 <% if locals.blank? %>
   <p class="px-3 py-3 text-xs text-slate-500">No locals in scope.</p>
 <% else %>

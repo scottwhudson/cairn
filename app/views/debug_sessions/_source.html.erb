@@ -1,8 +1,10 @@
-<%# Center panel: source at the current stopped line. %>
+<%# Center panel: source at the selected frame (top frame by default). %>
 <%
-  abs_path   = snapshot && snapshot[:file]
-  focus_line = snapshot && snapshot[:line]
-  lines      = source_window(abs_path, focus_line)
+  frame_index = local_assigns.fetch(:frame_index, 0).to_i
+  frame       = snapshot && snapshot[:frames] && snapshot[:frames][frame_index]
+  abs_path    = frame ? frame[:file] : (snapshot && snapshot[:file])
+  focus_line  = frame ? frame[:line] : (snapshot && snapshot[:line])
+  lines       = source_window(abs_path, focus_line)
   rel        = if abs_path && repo_path.present? then abs_path.sub("#{repo_path}/", "") else abs_path || "—" end
 %>
 
