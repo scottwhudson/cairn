@@ -1,0 +1,22 @@
+<%# One variable row. If it's structured (ref > 0) it gets a disclosure toggle
+    and an empty nested container that expand_local fills on first click. %>
+<% expandable = var[:ref].to_i.positive? %>
+<div>
+  <div class="flex items-baseline gap-1.5 px-3 py-1 hover:bg-slate-800/40">
+    <% if expandable %>
+      <button type="button"
+              data-action="stepper#toggleLocal"
+              data-stepper-ref-param="<%= var[:ref] %>"
+              aria-expanded="false"
+              class="shrink-0 select-none text-slate-500 transition-transform hover:text-slate-300 aria-expanded:rotate-90">▶</button>
+    <% else %>
+      <span class="w-[1ch] shrink-0"></span>
+    <% end %>
+    <span class="shrink-0 font-mono text-slate-300"><%= var[:name] %></span>
+    <span class="font-mono break-all text-emerald-300"><%= truncate(var[:value].to_s, length: 120) %></span>
+    <% if var[:type].present? %><span class="ml-auto shrink-0 text-[10px] text-slate-600"><%= var[:type] %></span><% end %>
+  </div>
+  <% if expandable %>
+    <div id="var-children-<%= var[:ref] %>" class="ml-3 hidden border-l border-slate-800 pl-1"></div>
+  <% end %>
+</div>

@@ -9,8 +9,8 @@ class DebugSessionsController < ApplicationController
     "step_out"  => :step_out
   }.freeze
 
-  # partial name => dom id it replaces. All are re-rendered on every stop, and
-  # blanked when execution resumes.
+  # partial name => id of the wrapper div whose contents it fills. All are
+  # re-rendered on every stop, and blanked when execution resumes.
   PANELS = { "source" => "source-panel", "callstack" => "callstack-panel",
              "locals" => "locals-panel" }.freeze
 
@@ -68,6 +68,43 @@ class DebugSessionsController < ApplicationController
     render turbo_stream: panel_streams(client, snapshot, frame_index)
   end
 
+  # Drill into a structured local (hash/array/object): fetch its children from
+  # the adapter and render them into the row's nested container. Only meaningful
+  # while stopped — the variablesReference is a handle into the current stop.
+  def expand_local
+    client = require_client!
+    ref = params[:ref].to_i
+    return head(:no_content) unless client&.state == :stopped && ref.positive?
+
+    children = client.expand(ref)
+    render turbo_stream: turbo_stream.update(
+      "var-children-#{ref}", partial: "debug_sessions/vars", locals: { vars: children }
+    )
+  end
+
+  # REPL: evaluate an expression in the context of the selected call-stack frame
+  # and append the result to the console log. Only meaningful while stopped — the
+  # frame id (and any structured result's ref) is a handle into the current stop.
+  def evaluate
+    client = require_client!
+    expr = params[:expression].to_s.strip
+    return head(:no_content) if expr.blank?
+
+    result =
+      if client&.state == :stopped
+        snapshot = client.snapshot
+        idx = params[:frame].to_i.clamp(0, [ snapshot[:frames].size - 1, 0 ].max)
+        client.evaluate(expr, frame_id: snapshot.dig(:frames, idx, :id))
+      else
+        { value: "not at a breakpoint — step to a stop first", ref: 0, error: true }
+      end
+
+    render turbo_stream: turbo_stream.append(
+      "repl-output", partial: "debug_sessions/repl_entry",
+      locals: { expression: expr, result: result }
+    )
+  end
+
   def destroy
     Debug::SessionRegistry.get&.detach
     Debug::SessionRegistry.clear
@@ -116,25 +153,42 @@ class DebugSessionsController < ApplicationController
 
   def broadcast_stop(client, snapshot)
     broadcast_panels(client, snapshot)
+    broadcast_repl(stopped: true)
   end
 
   def broadcast_state(client, state)
     Debug::SessionRegistry.clear if state == :terminated
     # Execution resumed or ended: blank the panels so they don't keep showing the
-    # frame we just left. A following `stopped` repopulates them.
-    broadcast_panels(client, nil) if %i[running terminated].include?(state)
-    Turbo::StreamsChannel.broadcast_replace_to(
+    # frame we just left, and reset the REPL (its refs/frame are now stale). A
+    # following `stopped` repopulates the panels and reactivates the console.
+    if %i[running terminated].include?(state)
+      broadcast_panels(client, nil)
+      broadcast_repl(stopped: false)
+    end
+    Turbo::StreamsChannel.broadcast_update_to(
       STREAM, target: "session-status", partial: "debug_sessions/status", locals: { state: state }
     )
   end
 
   # Broadcast every panel from a snapshot (nil snapshot => empty/reset state).
+  # `update` (not `replace`) so the id-bearing wrapper div survives — replacing it
+  # strips the id, and the next broadcast (e.g. the reset on resume) can't find its
+  # target and silently no-ops, leaving the stale frame on screen.
   def broadcast_panels(client, snapshot)
     panel_locals(client, snapshot).each do |partial, locals|
-      Turbo::StreamsChannel.broadcast_replace_to(
+      Turbo::StreamsChannel.broadcast_update_to(
         STREAM, target: PANELS[partial], partial: "debug_sessions/#{partial}", locals: locals
       )
     end
+  end
+
+  # Re-render the whole REPL region. `update` keeps the id-bearing wrapper, and
+  # re-rendering clears the log — so exiting a stop wipes stale entries and
+  # disables input until the next stop reactivates it.
+  def broadcast_repl(stopped:)
+    Turbo::StreamsChannel.broadcast_update_to(
+      STREAM, target: "repl-panel", partial: "debug_sessions/repl", locals: { stopped: stopped }
+    )
   end
 
   def broadcast_flash(message)
@@ -152,7 +206,7 @@ class DebugSessionsController < ApplicationController
 
   def panel_streams(client, snapshot, frame_index = 0)
     panel_locals(client, snapshot, frame_index).map do |partial, locals|
-      turbo_stream.replace(PANELS[partial], partial: "debug_sessions/#{partial}", locals: locals)
+      turbo_stream.update(PANELS[partial], partial: "debug_sessions/#{partial}", locals: locals)
     end
   end
 end

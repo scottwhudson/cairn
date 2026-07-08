@@ -11,7 +11,9 @@
 <div class="flex h-[calc(100vh-9rem)] flex-col gap-3"
      data-controller="stepper"
      data-stepper-step-url-value="<%= step_debug_session_path %>"
-     data-stepper-select-frame-url-value="<%= select_frame_debug_session_path %>">
+     data-stepper-select-frame-url-value="<%= select_frame_debug_session_path %>"
+     data-stepper-expand-local-url-value="<%= expand_local_debug_session_path %>"
+     data-stepper-evaluate-url-value="<%= evaluate_debug_session_path %>">
 
   <%# ── top bar: title + session controls ─────────────────────────── %>
   <div class="flex items-center gap-3">
@@ -49,6 +51,13 @@
       </div>
     </aside>
   </div>
+
+  <%# ── repl ──────────────────────────────────────────────────────── %>
+  <% if active %>
+    <div id="repl-panel" class="h-48 shrink-0">
+      <%= render "debug_sessions/repl", stopped: @client.state == :stopped %>
+    </div>
+  <% end %>
 
   <%# ── controls ──────────────────────────────────────────────────── %>
   <%= render "debug_sessions/controls" %>

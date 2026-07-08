@@ -5,6 +5,8 @@ Rails.application.routes.draw do
   resource :debug_session, only: %i[show create destroy], controller: "debug_sessions" do
     post :step          # continue / next / step_in / step_out
     post :select_frame  # inspect a different frame of the current stop
+    post :expand_local  # drill into a structured local's children
+    post :evaluate      # run a REPL expression in the selected frame
   end
 
   get "up" => "rails/health#show", as: :rails_health_check

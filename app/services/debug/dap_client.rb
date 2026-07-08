@@ -85,6 +85,34 @@ module Debug
       request("configurationDone")
     end
 
+    # Fetch the children of a structured variable (hash/array/object) by its
+    # `variablesReference`, so the UI can drill into a local on demand. Only valid
+    # while stopped — refs are handles into the current stop and go stale on the
+    # next resume. Degrades to [] on any adapter error so a stale/bad ref never
+    # surfaces as a 500.
+    def expand(ref)
+      return [] if ref.nil? || ref.to_i.zero?
+      variables_for(ref).map { |v| var_entry(v) }
+    rescue Error => e
+      log("expand #{ref} failed: #{e.message}")
+      []
+    end
+
+    # Evaluate an expression in the context of a frame (the selected call-stack
+    # frame), like typing into a debugger console. Unlike execution-control
+    # commands, `evaluate` returns a real response, so we can block on it. A
+    # structured result carries a `ref` the UI can drill into via #expand. Errors
+    # (bad syntax, NameError, …) come back as a value flagged :error rather than
+    # raising, so the REPL can print them like a console would.
+    def evaluate(expression, frame_id: nil)
+      args = { expression: expression, context: "repl" }
+      args[:frameId] = frame_id if frame_id
+      body = request("evaluate", args)["body"] || {}
+      { value: body["result"], type: body["type"], ref: body["variablesReference"].to_i }
+    rescue Error => e
+      { value: e.message.sub(/\A'evaluate' failed: /, ""), type: nil, ref: 0, error: true }
+    end
+
     # --- execution control ---------------------------------------------------
 
     def continue = control("continue")
