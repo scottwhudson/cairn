@@ -1,5 +1,5 @@
 module SourceHelper
-  Line = Struct.new(:number, :text, :current, keyword_init: true)
+  Line = Struct.new(:number, :text, :current)
 
   # Reads a window of source around `focus_line` and tags each line with whether
   # it's the current execution point.
@@ -8,8 +8,8 @@ module SourceHelper
 
     all = File.readlines(abs_path, chomp: true)
     focus = focus_line || 1
-    first = [ focus - context, 1 ].max
-    last  = [ focus + context, all.size ].min
+    first = [focus - context, 1].max
+    last = [focus + context, all.size].min
 
     (first..last).map do |n|
       Line.new(number: n, text: all[n - 1], current: n == focus_line)

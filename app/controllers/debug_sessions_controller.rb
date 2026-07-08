@@ -3,16 +3,16 @@ class DebugSessionsController < ApplicationController
   STREAM = "debug_session".freeze
 
   STEP_COMMANDS = {
-    "continue"  => :continue,
-    "next"      => :step_over,
-    "step_in"   => :step_in,
-    "step_out"  => :step_out
+    "continue" => :continue,
+    "next" => :step_over,
+    "step_in" => :step_in,
+    "step_out" => :step_out
   }.freeze
 
   # partial name => id of the wrapper div whose contents it fills. All are
   # re-rendered on every stop, and blanked when execution resumes.
-  PANELS = { "source" => "source-panel", "callstack" => "callstack-panel",
-             "locals" => "locals-panel" }.freeze
+  PANELS = {"source" => "source-panel", "callstack" => "callstack-panel",
+            "locals" => "locals-panel"}.freeze
 
   def show
     @client = Debug::SessionRegistry.get
@@ -64,7 +64,7 @@ class DebugSessionsController < ApplicationController
     snapshot = client&.snapshot
     return head(:no_content) unless snapshot
 
-    frame_index = params[:frame].to_i.clamp(0, [ snapshot[:frames].size - 1, 0 ].max)
+    frame_index = params[:frame].to_i.clamp(0, [snapshot[:frames].size - 1, 0].max)
     render turbo_stream: panel_streams(client, snapshot, frame_index)
   end
 
@@ -78,7 +78,7 @@ class DebugSessionsController < ApplicationController
 
     children = client.expand(ref)
     render turbo_stream: turbo_stream.update(
-      "var-children-#{ref}", partial: "debug_sessions/vars", locals: { vars: children }
+      "var-children-#{ref}", partial: "debug_sessions/vars", locals: {vars: children}
     )
   end
 
@@ -93,15 +93,15 @@ class DebugSessionsController < ApplicationController
     result =
       if client&.state == :stopped
         snapshot = client.snapshot
-        idx = params[:frame].to_i.clamp(0, [ snapshot[:frames].size - 1, 0 ].max)
+        idx = params[:frame].to_i.clamp(0, [snapshot[:frames].size - 1, 0].max)
         client.evaluate(expr, frame_id: snapshot.dig(:frames, idx, :id))
       else
-        { value: "not at a breakpoint — step to a stop first", ref: 0, error: true }
+        {value: "not at a breakpoint — step to a stop first", ref: 0, error: true}
       end
 
     render turbo_stream: turbo_stream.append(
       "repl-output", partial: "debug_sessions/repl_entry",
-      locals: { expression: expr, result: result }
+      locals: {expression: expr, result: result}
     )
   end
 
@@ -122,7 +122,7 @@ class DebugSessionsController < ApplicationController
   end
 
   def client_target
-    "#{connect_params[:host].presence || '127.0.0.1'}:#{connect_params[:port]}"
+    "#{connect_params[:host].presence || "127.0.0.1"}:#{connect_params[:port]}"
   end
 
   def connect_with_retry(client, attempts: 10)
@@ -140,11 +140,11 @@ class DebugSessionsController < ApplicationController
     return unless file && line.positive?
 
     abs = File.expand_path(file, client.repo_path)
-    client.set_breakpoints(abs, [ { line: line } ])
+    client.set_breakpoints(abs, [{line: line}])
   end
 
   def wire_callbacks(client)
-    client.on_stop  { |snap| broadcast_stop(client, snap) }
+    client.on_stop { |snap| broadcast_stop(client, snap) }
     client.on_state { |state| broadcast_state(client, state) }
     client.on_error { |cmd, msg| broadcast_flash("#{cmd} failed: #{msg}") }
   end
@@ -166,7 +166,7 @@ class DebugSessionsController < ApplicationController
       broadcast_repl(stopped: false)
     end
     Turbo::StreamsChannel.broadcast_update_to(
-      STREAM, target: "session-status", partial: "debug_sessions/status", locals: { state: state }
+      STREAM, target: "session-status", partial: "debug_sessions/status", locals: {state: state}
     )
   end
 
@@ -187,20 +187,20 @@ class DebugSessionsController < ApplicationController
   # disables input until the next stop reactivates it.
   def broadcast_repl(stopped:)
     Turbo::StreamsChannel.broadcast_update_to(
-      STREAM, target: "repl-panel", partial: "debug_sessions/repl", locals: { stopped: stopped }
+      STREAM, target: "repl-panel", partial: "debug_sessions/repl", locals: {stopped: stopped}
     )
   end
 
   def broadcast_flash(message)
     Turbo::StreamsChannel.broadcast_replace_to(
-      STREAM, target: "session-flash", partial: "debug_sessions/flash", locals: { message: message }
+      STREAM, target: "session-flash", partial: "debug_sessions/flash", locals: {message: message}
     )
   end
 
   # { "source" => {locals}, ... } for each panel partial. frame_index selects
   # which frame the source/locals/callstack panels focus on (0 = top of stack).
   def panel_locals(client, snapshot, frame_index = 0)
-    base = { repo_path: client.repo_path, snapshot: snapshot, frame_index: frame_index }
+    base = {repo_path: client.repo_path, snapshot: snapshot, frame_index: frame_index}
     PANELS.keys.index_with { base }
   end
 

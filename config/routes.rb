@@ -9,7 +9,7 @@ Rails.application.routes.draw do
     post :evaluate      # run a REPL expression in the selected frame
   end
 
-  get "up" => "rails/health#show", as: :rails_health_check
+  get "up" => "rails/health#show", :as => :rails_health_check
 
   root "debug_sessions#show"
 end

@@ -13,6 +13,6 @@ class CreateWaypoints < ActiveRecord::Migration[8.1]
       t.timestamps
     end
 
-    add_index :waypoints, [ :tour_id, :position ]
+    add_index :waypoints, [:tour_id, :position]
   end
 end

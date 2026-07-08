@@ -45,7 +45,7 @@ module Debug
       @thread_id = 1
     end
 
-    def on_stop(&blk)  = (@on_stop = blk)
+    def on_stop(&blk) = (@on_stop = blk)
     def on_state(&blk) = (@on_state = blk)
     def on_error(&blk) = (@on_error = blk)
 
@@ -65,7 +65,7 @@ module Debug
 
       # localfs:true tells rdbg the client shares its filesystem, so absolute
       # source paths map directly and breakpoints can be verified.
-      request("attach", { localfs: true }, timeout: timeout)
+      request("attach", {localfs: true}, timeout: timeout)
       wait_for_initialized(timeout)
       transition(:connected)
       self
@@ -75,8 +75,8 @@ module Debug
     # Returns the verified breakpoint descriptors from the adapter.
     def set_breakpoints(abs_path, breakpoints)
       resp = request("setBreakpoints", {
-        source: { path: abs_path },
-        breakpoints: breakpoints.map { |b| { line: b[:line], condition: b[:condition] }.compact }
+        source: {path: abs_path},
+        breakpoints: breakpoints.map { |b| {line: b[:line], condition: b[:condition]}.compact }
       })
       resp.dig("body", "breakpoints") || []
     end
@@ -105,26 +105,26 @@ module Debug
     # (bad syntax, NameError, …) come back as a value flagged :error rather than
     # raising, so the REPL can print them like a console would.
     def evaluate(expression, frame_id: nil)
-      args = { expression: expression, context: "repl" }
+      args = {expression: expression, context: "repl"}
       args[:frameId] = frame_id if frame_id
       body = request("evaluate", args)["body"] || {}
-      { value: body["result"], type: body["type"], ref: body["variablesReference"].to_i }
+      {value: body["result"], type: body["type"], ref: body["variablesReference"].to_i}
     rescue Error => e
-      { value: e.message.sub(/\A'evaluate' failed: /, ""), type: nil, ref: 0, error: true }
+      {value: e.message.sub(/\A'evaluate' failed: /, ""), type: nil, ref: 0, error: true}
     end
 
     # --- execution control ---------------------------------------------------
 
     def continue = control("continue")
     def step_over = control("next")
-    def step_in  = control("stepIn")
+    def step_in = control("stepIn")
     def step_out = control("stepOut")
 
     # Detach from the running server without killing it. We attached to a process
     # the user is running (their Rails server), so we send DAP `disconnect` with
     # terminateDebuggee:false and let it keep serving requests.
     def detach
-      request("disconnect", { terminateDebuggee: false }, timeout: 3)
+      request("disconnect", {terminateDebuggee: false}, timeout: 3)
     rescue Error
       # adapter may already be gone
     ensure
@@ -147,8 +147,8 @@ module Debug
     # caller; a failure response with no waiter is surfaced via #on_error.
     def control(command)
       seq = next_seq
-      write_message({ seq: seq, type: "request", command: command,
-                      arguments: { threadId: @thread_id, singleThread: true } })
+      write_message({seq: seq, type: "request", command: command,
+                      arguments: {threadId: @thread_id, singleThread: true}})
       # Execution has resumed and left the current stop. Signal :running so the
       # UI can reset the stop-specific panels; the next `stopped` repopulates them
       # (or the debuggee just keeps running if nothing else stops it).
@@ -162,12 +162,12 @@ module Debug
       seq = next_seq
       queue = Queue.new
       @pending_lock.synchronize { @pending[seq] = queue }
-      write_message({ seq: seq, type: "request", command: command, arguments: arguments })
+      write_message({seq: seq, type: "request", command: command, arguments: arguments})
 
       resp = queue.pop(timeout: timeout)
       raise Timeout, "no response to '#{command}' within #{timeout}s" if resp.nil?
       unless resp["success"]
-        raise Error, "'#{command}' failed: #{resp['message'] || 'unknown error'}"
+        raise Error, "'#{command}' failed: #{resp["message"] || "unknown error"}"
       end
       resp
     ensure
@@ -214,7 +214,7 @@ module Debug
           # A single bad event must never kill the dispatcher — if it did, every
           # later `stopped` event (i.e. every step) would go unhandled and the UI
           # would silently stop updating. Log and keep draining the queue.
-          log("dispatch error handling #{ev['event'] if ev.is_a?(Hash)}: #{e.class}: #{e.message}")
+          log("dispatch error handling #{ev["event"] if ev.is_a?(Hash)}: #{e.class}: #{e.message}")
         end
       end
     end
@@ -228,7 +228,7 @@ module Debug
       when "terminated", "exited"
         transition(:terminated)
       when "output"
-        log("[debuggee] #{ev.dig('body', 'output')&.strip}")
+        log("[debuggee] #{ev.dig("body", "output")&.strip}")
       end
     end
 
@@ -285,11 +285,11 @@ module Debug
     MAX_FRAMES = 50
 
     def stack_frames
-      resp = request("stackTrace", { threadId: @thread_id, startFrame: 0, levels: MAX_FRAMES })
+      resp = request("stackTrace", {threadId: @thread_id, startFrame: 0, levels: MAX_FRAMES})
       (resp.dig("body", "stackFrames") || []).filter_map do |f|
         path = f.dig("source", "path")
         next if path.nil? # skip frames without source (C / internal)
-        { id: f["id"], name: f["name"], file: path, line: f["line"] }
+        {id: f["id"], name: f["name"], file: path, line: f["line"]}
       end
     end
 
@@ -309,7 +309,7 @@ module Debug
 
     def locals_for(frame_id, ivars: true)
       return [] if frame_id.nil?
-      scopes = request("scopes", { frameId: frame_id }).dig("body", "scopes") || []
+      scopes = request("scopes", {frameId: frame_id}).dig("body", "scopes") || []
       local_scope = scopes.find { |s| s["name"] =~ /local/i } || scopes.first
       return [] unless local_scope
       ref = local_scope["variablesReference"]
@@ -336,11 +336,11 @@ module Debug
     end
 
     def variables_for(ref)
-      request("variables", { variablesReference: ref }).dig("body", "variables") || []
+      request("variables", {variablesReference: ref}).dig("body", "variables") || []
     end
 
     def var_entry(v)
-      { name: v["name"], value: v["value"], type: v["type"], ref: v["variablesReference"] }
+      {name: v["name"], value: v["value"], type: v["type"], ref: v["variablesReference"]}
     end
 
     # ---- framing -------------------------------------------------------------
