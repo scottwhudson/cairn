@@ -22,10 +22,18 @@ module Debug
     # Attach to a running rdbg DAP server (e.g. a Rails server started with
     # `rdbg --open`). Returns the connected client, whose reader/dispatcher
     # threads outlive the request that created it.
-    def attach(host:, port:, logger: Rails.logger)
+    # `repo_path` is the debuggee's source root. Cairn runs in its own process, and
+    # DAP never reports where the target's code lives, so it has to be told: it's
+    # what separates app frames from gem frames, and what shortens absolute paths
+    # for display. A trailing slash would break both (they compare against
+    # "#{repo_path}/"), so normalize it away.
+    def attach(host:, port:, repo_path: nil, logger: Rails.logger)
       raise AlreadyAttached if attached?
 
-      client = DapClient.new(host: host.presence || "127.0.0.1", port: port.to_i, logger: logger)
+      client = DapClient.new(
+        host: host.presence || "127.0.0.1", port: port.to_i, logger: logger,
+        repo_path: repo_path.presence&.strip&.chomp("/")
+      )
       wire_callbacks(client)
       connect_with_retry(client)
       client.configuration_done
@@ -59,6 +67,17 @@ module Debug
       return unless snapshot
 
       Panels.for(client, snapshot, frame_index: frame_index(snapshot, frame))
+    end
+
+    # Stop the debuggee wherever it raises, rather than letting the exception
+    # unwind into its error page. Unlike the stop-scoped calls below this works
+    # while the debuggee is running — arming it mid-flight is the point.
+    def break_on_exception(enabled)
+      client = current
+      return unless client
+
+      client.break_on_exception = enabled
+      enabled
     end
 
     # The children of a structured local (hash/array/object). Only meaningful

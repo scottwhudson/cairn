@@ -1,5 +1,6 @@
-<%# Session state pill + attach/detach control. %>
+<%# Session state pill + break-on-exception + attach/detach control. %>
 <% active = Debug::SessionRegistry.active? %>
+<% client = Debug::Session.current %>
 <div class="flex items-center gap-2">
   <% color = { "running" => "bg-emerald-500", "connected" => "bg-emerald-500", "stopped" => "bg-amber-400",
                "starting" => "bg-amber-400 animate-pulse", "terminated" => "bg-slate-500" }[state.to_s] || "bg-slate-600" %>
@@ -8,6 +9,18 @@
   </span>
 
   <% if active %>
+    <%# Arming this stops the debuggee at a raise instead of letting it unwind to
+        its own error page — so the failing request's browser tab hangs until you
+        continue. Worth saying out loud in the tooltip. %>
+    <% armed = client&.break_on_exception %>
+    <%= button_to break_on_exception_debug_session_path, params: {enabled: !armed},
+          title: "Stop at a raise, with the frames still alive. The failing request waits until you continue.",
+          aria: {pressed: armed.to_s},
+          class: "rounded px-2 py-1 text-xs font-medium transition-colors " \
+                 "#{armed ? "bg-rose-500/15 text-rose-300 hover:bg-rose-500/25" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"}" do %>
+      break on raise
+    <% end %>
+
     <%= button_to "Detach", debug_session_path, method: :delete,
           class: "rounded-md bg-rose-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-rose-600" %>
   <% end %>

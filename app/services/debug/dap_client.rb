@@ -22,14 +22,27 @@ module Debug
     class Error < StandardError; end
     class Timeout < Error; end
 
-    attr_reader :host, :port, :snapshot, :capabilities, :state
+    attr_reader :host, :port, :snapshot, :capabilities, :state, :break_on_exception
     attr_accessor :repo_path  # source root for relative-path display in the UI
+
+    # A frame in the code under debug, as opposed to a gem or the framework: its
+    # source sits under the debuggee's repo root. `vendor/` is the exception —
+    # bundled gems land inside the repo but aren't the app's own code. Without a
+    # repo root nothing can be classified, so nothing is an app frame.
+    def self.app_frame?(file, repo_path)
+      return false if repo_path.blank?
+
+      path = file.to_s
+      path.start_with?("#{repo_path}/") && !path.start_with?("#{repo_path}/vendor/")
+    end
 
     def initialize(host:, port:, logger: nil, repo_path: nil)
       @host = host
       @port = port
       @logger = logger
       @repo_path = repo_path
+
+      @break_on_exception = false
 
       @seq = 0
       @seq_lock = Mutex.new
@@ -83,6 +96,26 @@ module Debug
 
     def configuration_done
       request("configurationDone")
+    end
+
+    # rdbg's filter id for "catch every exception". Its `initialize` response also
+    # offers "RuntimeError", but a raise that reaches Rails' error page is rarely a
+    # bare RuntimeError, so the narrower filter isn't worth an option.
+    EXCEPTION_FILTER = "any"
+
+    # Arm rdbg's catch breakpoint: a raise then stops the debuggee *at the raise
+    # site*, frames intact, instead of unwinding to Rails' error page. That's the
+    # whole difference from a post-mortem page like better_errors — the frames are
+    # alive, so they can be stepped and (with `record on`) stepped backward.
+    #
+    # rdbg rebuilds its catch breakpoints from `filters` on every call, so this
+    # sets rather than toggles, and an empty list clears them. The paused thread
+    # can't answer the request that raised: that browser tab hangs until you
+    # continue, at which point the exception propagates and Rails renders its
+    # normal error page.
+    def break_on_exception=(enabled)
+      request("setExceptionBreakpoints", {filters: enabled ? [EXCEPTION_FILTER] : []})
+      @break_on_exception = enabled
     end
 
     # Fetch the children of a structured variable (hash/array/object) by its
@@ -246,13 +279,25 @@ module Debug
       end
 
       transition(:stopped)
-      @snapshot = build_snapshot(reason)
+      # A catch breakpoint stops with reason "exception". Other stops carry no
+      # useful text.
+      @snapshot = build_snapshot(reason, exception: (exception_text(ev) if reason == "exception"))
       @on_stop&.call(@snapshot)
+    end
+
+    # rdbg phrases the raise as `#<ArgumentError: boom> is raised.` — unwrap it to
+    # `ArgumentError: boom`, which is what the header has room to show. Anything
+    # that doesn't match the shape passes through as-is.
+    RAISE_DESCRIPTION = /\A#<(?<class_and_message>.+)>\s+is raised\.?\z/m
+
+    def exception_text(ev)
+      text = ev.dig("body", "text").to_s.strip
+      RAISE_DESCRIPTION.match(text)&.[](:class_and_message) || text.presence
     end
 
     # ---- snapshot construction ----------------------------------------------
 
-    def build_snapshot(reason)
+    def build_snapshot(reason, exception: nil)
       frames = stack_frames
       # Capture locals for every frame now, while the frame ids are still valid
       # (they go stale on the next resume). This lets selecting a frame re-render
@@ -271,6 +316,7 @@ module Debug
       top = frames.first || {}
       {
         reason: reason,
+        exception: exception,
         file: top[:file],
         line: top[:line],
         frames: frames,
@@ -297,7 +343,7 @@ module Debug
     # the top (currently-stopped) frame. Keeps stepping snappy on deep stacks.
     def expand_ivars?(frame, top:)
       return true if top
-      repo_path.present? && frame[:file].to_s.start_with?("#{repo_path}/")
+      self.class.app_frame?(frame[:file], repo_path)
     end
 
     def safe_locals_for(frame_id, ivars: true)

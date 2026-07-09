@@ -1,20 +1,30 @@
 <%# Center panel: source at the selected frame (top frame by default). Fills its
-    wrapper as a column — pinned header, scrolling code, pinned controls footer. %>
+    wrapper as a column — pinned title + controls header, scrolling code, pinned
+    footer naming the file on screen. %>
 <%
   frame_index = local_assigns.fetch(:frame_index, 0).to_i
   frame       = snapshot && snapshot[:frames] && snapshot[:frames][frame_index]
   abs_path    = frame ? frame[:file] : (snapshot && snapshot[:file])
   focus_line  = frame ? frame[:line] : (snapshot && snapshot[:line])
   lines       = source_lines(abs_path, focus_line)
-  rel        = if abs_path && repo_path.present? then abs_path.sub("#{repo_path}/", "") else abs_path || "—" end
+  rel         = if abs_path && repo_path.present? then abs_path.sub("#{repo_path}/", "") else abs_path end
 %>
 
 <div class="flex h-full flex-col">
-  <div class="flex items-center gap-2 border-b border-slate-800 bg-slate-900/90 px-3 py-2">
-    <span class="font-mono text-xs text-slate-300"><%= rel %><%= ":#{focus_line}" if focus_line %></span>
+  <%# h-10 is shared by every panel header so their bottom borders line up
+      across the grid's dividers. %>
+  <div class="flex h-10 shrink-0 items-center gap-2 border-b border-slate-800 bg-slate-900/90 px-3">
+    <h2 class="text-sm font-semibold tracking-tight text-slate-100">Source</h2>
     <% if snapshot %>
-      <span class="rounded bg-sky-500/20 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-sky-300"><%= snapshot[:reason] %></span>
+      <% raised = snapshot[:reason].to_s == "exception" %>
+      <span class="shrink-0 rounded px-1.5 py-0.5 text-[10px] uppercase tracking-wide <%= raised ? "bg-rose-500/20 text-rose-300" : "bg-sky-500/20 text-sky-300" %>"><%= snapshot[:reason] %></span>
+      <%# rdbg describes the raise ("RuntimeError: boom"); it's the one thing you
+          want to read before anything else on an exception stop. %>
+      <% if raised && snapshot[:exception].present? %>
+        <span class="truncate font-mono text-xs text-rose-300/80" title="<%= snapshot[:exception] %>"><%= snapshot[:exception] %></span>
+      <% end %>
     <% end %>
+    <div class="ml-auto shrink-0"><%= render "debug_sessions/controls" %></div>
   </div>
 
   <div class="min-h-0 flex-1 overflow-y-auto" data-controller="source">
@@ -28,6 +38,8 @@
   </div>
 
   <div class="border-t border-slate-800 bg-slate-900/90 px-3 py-2">
-    <%= render "debug_sessions/controls" %>
+    <span class="block truncate font-mono text-xs leading-5 text-slate-400">
+      <% if rel %><%= rel %><%= ":#{focus_line}" if focus_line %><% else %><span class="text-slate-600">Not attached</span><% end %>
+    </span>
   </div>
 </div>

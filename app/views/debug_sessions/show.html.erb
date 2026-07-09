@@ -1,4 +1,4 @@
-<% content_for :title, "Debug session" %>
+<% content_for :title, "Cairn Debugger" %>
 <%= turbo_stream_from Debug::SessionBroadcaster::STREAM, channel: "DebugChannel" %>
 
 <%
@@ -16,7 +16,7 @@
   <% end %>
 <% end %>
 
-<div class="flex h-full flex-col gap-3"
+<div class="flex h-full flex-col"
      data-controller="stepper"
      data-stepper-step-url-value="<%= step_debug_session_path %>"
      data-stepper-select-frame-url-value="<%= select_frame_debug_session_path %>"
@@ -25,32 +25,41 @@
 
   <div id="session-flash"></div>
 
-  <%# ── panels ────────────────────────────────────────────────────── %>
-  <div class="grid min-h-0 flex-1 grid-cols-12 gap-3">
-    <section class="col-span-8 min-h-0 overflow-hidden rounded-lg border border-slate-800 bg-slate-900/40">
-      <div id="source-panel" class="h-full">
-        <%= render "debug_sessions/source", **panel_locals %>
-      </div>
-    </section>
+  <%# ── panels ────────────────────────────────────────────────────────
+      One framed grid rather than free-floating cards: panels butt against each
+      other and are separated by draggable hairlines. Each resizable track is
+      sized from a custom property that the splitter controller rewrites; the
+      neighbouring `1fr` track soaks up the slack. %>
+  <div class="grid min-h-0 flex-1 overflow-hidden bg-slate-900/40"
+       style="grid-template-rows: minmax(0, 1fr)<%= " auto minmax(0, var(--repl-h, 12rem))" if active %>">
 
-    <aside class="col-span-4 flex min-h-0 flex-col gap-3">
-      <div class="min-h-0 flex-1 overflow-hidden rounded-lg border border-slate-800 bg-slate-900/40">
-        <div id="callstack-panel" class="h-full overflow-y-auto">
+    <div class="grid min-h-0" style="grid-template-columns: minmax(0, 1fr) auto minmax(0, var(--side-w, 22rem))">
+      <section id="source-panel" class="min-h-0">
+        <%= render "debug_sessions/source", **panel_locals %>
+      </section>
+
+      <%= render "debug_sessions/gutter", axis: "col", variable: "--side-w", edge: "right", min: 240 %>
+
+      <aside class="grid min-h-0" style="grid-template-rows: minmax(0, var(--callstack-h, 1fr)) auto minmax(0, 1fr)">
+        <div id="callstack-panel" class="min-h-0 overflow-y-auto">
           <%= render "debug_sessions/callstack", **panel_locals %>
         </div>
-      </div>
-      <div class="min-h-0 flex-1 overflow-hidden rounded-lg border border-slate-800 bg-slate-900/40">
-        <div id="locals-panel" class="h-full overflow-y-auto">
+
+        <%= render "debug_sessions/gutter", axis: "row", variable: "--callstack-h", edge: "top", min: 80 %>
+
+        <div id="locals-panel" class="min-h-0 overflow-y-auto">
           <%= render "debug_sessions/locals", **panel_locals %>
         </div>
-      </div>
-    </aside>
-  </div>
-
-  <%# ── repl ──────────────────────────────────────────────────────── %>
-  <% if active %>
-    <div id="repl-panel" class="h-48 shrink-0">
-      <%= render "debug_sessions/repl", stopped: @client.state == :stopped %>
+      </aside>
     </div>
-  <% end %>
+
+    <%# ── repl ──────────────────────────────────────────────────────── %>
+    <% if active %>
+      <%= render "debug_sessions/gutter", axis: "row", variable: "--repl-h", edge: "bottom", min: 80 %>
+
+      <div id="repl-panel" class="min-h-0">
+        <%= render "debug_sessions/repl", stopped: @client.state == :stopped %>
+      </div>
+    <% end %>
+  </div>
 </div>

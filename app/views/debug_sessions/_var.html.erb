@@ -1,6 +1,12 @@
 <%# One variable row. If it's structured (ref > 0) it gets a disclosure toggle
     and an empty nested container that expand_local fills on first click. %>
-<% expandable = var[:ref].to_i.positive? %>
+<%
+  expandable = drillable?(var)
+  # `.rouge-src` hands the value over to the theme's colors; without it the
+  # fallback keeps the flat emerald it had before.
+  value = highlight_value(var[:value])
+  value_class = value ? "rouge-src" : "text-emerald-300"
+%>
 <div>
   <div class="flex items-baseline gap-1.5 px-3 py-1 hover:bg-slate-800/40">
     <% if expandable %>
@@ -13,7 +19,7 @@
       <span class="w-[1ch] shrink-0"></span>
     <% end %>
     <span class="shrink-0 font-mono text-slate-300"><%= var[:name] %></span>
-    <span class="inline-block max-h-40 overflow-y-auto font-mono break-all whitespace-pre-wrap text-emerald-300"><%= var[:value] %></span>
+    <span class="inline-block max-h-40 overflow-y-auto font-mono break-all whitespace-pre-wrap <%= value_class %>"><%= value || var[:value] %></span>
     <% if var[:type].present? %><span class="ml-auto shrink-0 text-[10px] text-slate-600"><%= var[:type] %></span><% end %>
   </div>
   <% if expandable %>

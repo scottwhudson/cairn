@@ -14,6 +14,16 @@
           class: "w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5 font-mono text-sm" %>
   </div>
 
+  <div>
+    <%= f.label :repo_path, "Repo path", class: "mb-1 block text-xs text-slate-400" %>
+    <%= f.text_field :repo_path, placeholder: "/Users/you/code/target-app",
+          class: "w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5 font-mono text-sm" %>
+    <p class="mt-1 text-[11px] leading-relaxed text-slate-500">
+      The target's source root. Optional — without it, paths show in full and the
+      call stack can't tell your code from gem code.
+    </p>
+  </div>
+
   <%= f.submit "Attach", class: "w-full rounded-md bg-emerald-700 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-600" %>
 
   <p class="text-xs leading-relaxed text-slate-500">

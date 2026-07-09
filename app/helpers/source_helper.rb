@@ -1,4 +1,5 @@
 require "rouge"
+require "strscan"
 
 module SourceHelper
   Line = Struct.new(:number, :text, :html, :current)
@@ -39,7 +40,82 @@ module SourceHelper
       "\n.rouge-src { background: transparent; }"
   end
 
+  # Rouge-highlighted HTML for a REPL expression — real Ruby the user typed, so the
+  # Ruby lexer handles it. Returns nil when highlighting fails, so callers fall back
+  # to the raw text rather than blanking the row. Callers supply the `.rouge-src`
+  # scope the theme's CSS is written against.
+  def highlight_ruby(text)
+    text = text.to_s
+    return nil if text.empty?
+
+    format_tokens(Rouge::Lexers::Ruby.new.lex(text))
+  rescue => e
+    highlight_failed(text, e)
+  end
+
+  # Same, for the `inspect` string of a local or a REPL result. These can't go through
+  # the Ruby lexer: `inspect` leads with `#<`, and `#` opens a comment in Ruby, so the
+  # whole value lexes as one Comment token and renders flatter than the plain text it
+  # replaced. Instead we scan for the handful of shapes `inspect` actually emits and
+  # label them with the same Rouge tokens the source pane uses, so both panes are
+  # colored by one theme.
+  def highlight_value(text)
+    text = text.to_s
+    return nil if text.empty?
+
+    format_tokens(scan_inspect(text))
+  rescue => e
+    highlight_failed(text, e)
+  end
+
   private
+
+  T = Rouge::Token::Tokens
+
+  # Ordered: the first pattern to match at the scanner's cursor wins. The final
+  # catch-all keeps the scanner advancing on input none of the others claim.
+  #
+  # `0x…` addresses are dimmed as comments — they're noise, and they're the reason a
+  # value can't be compared across stops. The optional closing quote lets a string
+  # that rdbg truncated mid-literal still lex as a string.
+  INSPECT_TOKENS = [
+    [/"(?:\\.|[^"\\])*"?/, T::Str::Double],       # "draft", or a cut-off "dra
+    [/:0x\h+/, T::Comment],                       # :0x0000000126e47088
+    [/@@?[A-Za-z_]\w*/, T::Name::Variable::Instance], # @user, @@count
+    [/\b(?:nil|true|false)\b/, T::Keyword::Constant],
+    [/[a-z_]\w*[?!]?(?=:(?!:))/, T::Str::Symbol], # id:  — a hash label, not a::b
+    [/:[A-Za-z_]\w*[?!]?/, T::Str::Symbol],       # :draft
+    [/-?\d[\d_]*\.\d+(?:[eE][+-]?\d+)?/, T::Num::Float],
+    [/-?\d[\d_]*/, T::Num],
+    [/[A-Z]\w*(?:::[A-Z]\w*)*/, T::Name::Class],  # Product, ActiveRecord::Base
+    [/[#<>{}\[\](),=:]+/, T::Punctuation],
+    [/\s+/, T::Text],
+    [/./m, T::Text]
+  ].freeze
+
+  # [token, value] pairs for an inspect string, in the shape Rouge's formatter wants.
+  def scan_inspect(text)
+    scanner = StringScanner.new(text)
+    tokens = []
+    until scanner.eos?
+      INSPECT_TOKENS.each do |pattern, token|
+        next unless (value = scanner.scan(pattern))
+
+        tokens << [token, value]
+        break
+      end
+    end
+    tokens
+  end
+
+  def format_tokens(tokens)
+    Rouge::Formatters::HTML.new.format(tokens).html_safe
+  end
+
+  def highlight_failed(text, error)
+    Rails.logger.debug { "[SourceHelper] highlight failed for #{text.truncate(60)}: #{error.class}: #{error.message}" }
+    nil
+  end
 
   # Rouge-highlighted HTML for each source line (1-based line n -> index n - 1).
   # The whole file is lexed so multi-line tokens (heredocs, block comments) are

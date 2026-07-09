@@ -3,8 +3,8 @@
     on every stop/resume: `stopped` gates whether it's active — resuming past the
     breakpoint clears the log and disables input until the next stop. %>
 <% stopped = local_assigns.fetch(:stopped, false) %>
-<div class="flex h-full min-h-0 flex-col rounded-lg border border-slate-800 bg-slate-900/40">
-  <div class="flex items-center gap-2 border-b border-slate-800 px-3 py-2">
+<div class="flex h-full min-h-0 flex-col">
+  <div class="flex h-10 shrink-0 items-center gap-2 border-b border-slate-800 px-3">
     <h2 class="text-xs font-semibold uppercase tracking-wide text-slate-400">REPL</h2>
     <span class="text-[11px] text-slate-600"><%= stopped ? "runs in the selected frame" : "paused — active at the next stop" %></span>
   </div>
