@@ -4,12 +4,12 @@ module IconsHelper
     arrow_down
     arrow_right
     arrow_up
-    bug_ant
     chevron_right
     play
+    stones
   ].freeze
 
-  # Renders a Heroicon SVG partial from app/views/shared/_icons. Icons inherit the
+  # Renders an SVG partial from app/views/shared/_icons. Icons inherit the
   # current text color (fill/stroke: currentColor) and are sized via Tailwind
   # classes, e.g. `icon("play", class: "h-4 w-4 text-white")`.
   def icon(name, class: "h-4 w-4")

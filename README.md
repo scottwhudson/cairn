@@ -1,4 +1,4 @@
-# Interactive Debugger
+# Cairn
 
 A browser-based debugger that **attaches to a running Ruby app** and lets you step
 through it live. It drives `rdbg` (Ruby's `debug` gem) over the Debug Adapter
@@ -69,3 +69,8 @@ This is a POC. `Debug::SessionRegistry` is in-memory and holds a single session
 by design — the app itself persists no domain data. In development the async
 ActionCable adapter shares the one Rails process so broadcasts reach the browser
 without extra infra. Auth and multi-session supervision are left as future work.
+
+## Credits
+
+The stacked-stones logo is traced from a
+<a href="https://www.flaticon.com/free-icons/spa" title="spa icons">spa icon created by Freepik — Flaticon</a>.

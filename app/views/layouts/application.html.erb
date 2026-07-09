@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html class="h-full">
   <head>
-    <title><%= content_for(:title) || "Interactive Debugger Poc" %></title>
+    <title><%= content_for(:title) || "Cairn" %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="application-name" content="Interactive Debugger Poc">
+    <meta name="application-name" content="Cairn">
     <meta name="mobile-web-app-capable" content="yes">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
@@ -28,8 +28,8 @@
   <body class="h-full bg-slate-950 text-slate-100 antialiased">
     <header class="flex items-center gap-4 border-b border-slate-800 bg-slate-900/80 px-5 py-3">
       <%= link_to root_path, class: "inline-flex items-center gap-2 font-semibold tracking-tight text-slate-100 hover:text-white" do %>
-        <%= icon "bug_ant", class: "h-5 w-5 text-emerald-400" %>
-        Interactive Debugger
+        <%= icon "stones", class: "h-5 w-5 text-emerald-400" %>
+        Cairn
       <% end %>
       <span class="ml-auto text-xs text-slate-600">rdbg DAP · Hotwire</span>
     </header>
