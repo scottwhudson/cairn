@@ -1,0 +1,33 @@
+<%# The attach form, tucked into a slide-over. Only rendered while detached — once
+    a session is live the drawer has nothing to offer, and Detach lives in the
+    status pill. Opens on load so a fresh page still leads with the form. %>
+<div data-controller="drawer"
+     data-drawer-open-value="true"
+     data-action="keydown.esc@window->drawer#close">
+
+  <button type="button" data-action="drawer#open"
+          class="rounded-md bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-600">
+    Attach…
+  </button>
+
+  <div data-drawer-target="dialog" class="fixed inset-0 z-40 hidden" role="dialog" aria-modal="true" aria-label="Attach to a debug session">
+    <div data-drawer-target="backdrop" data-action="click->drawer#close"
+         class="absolute inset-0 bg-slate-950/70 opacity-0 transition-opacity duration-200"></div>
+
+    <div data-drawer-target="panel"
+         class="absolute inset-y-0 right-0 flex w-full max-w-md translate-x-full flex-col border-l border-slate-800 bg-slate-900 shadow-2xl transition-transform duration-200">
+      <div class="border-b border-slate-800 px-5 py-3">
+        <div class="flex items-start gap-2">
+          <h2 class="text-lg font-semibold">Live debug session</h2>
+          <button type="button" data-action="drawer#close" aria-label="Close"
+                  class="-mt-0.5 ml-auto rounded p-1 text-slate-500 hover:bg-slate-800 hover:text-slate-300">✕</button>
+        </div>
+        <p class="mt-1 text-xs leading-relaxed text-slate-500">Attach to a Rails server started with <span class="font-mono text-slate-400">rdbg --open</span> and step through the current frame.</p>
+      </div>
+
+      <div class="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+        <%= render "debug_sessions/connect_form" %>
+      </div>
+    </div>
+  </div>
+</div>

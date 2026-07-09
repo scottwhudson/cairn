@@ -3,10 +3,12 @@ require "rouge"
 module SourceHelper
   Line = Struct.new(:number, :text, :html, :current)
 
-  # Reads a window of source around `focus_line` and tags each line with whether
-  # it's the current execution point. Each line also carries Rouge-highlighted
-  # HTML (`html`); callers fall back to `text` when highlighting is unavailable.
-  def source_window(abs_path, focus_line, context: 8)
+  # Reads the whole source file and tags each line with whether it's the current
+  # execution point. The file is lexed in full anyway (multi-line tokens demand
+  # it), so rendering every line costs little beyond the markup; the pane scrolls
+  # the current line into view. Each line also carries Rouge-highlighted HTML
+  # (`html`); callers fall back to `text` when highlighting is unavailable.
+  def source_lines(abs_path, focus_line)
     return [] unless abs_path && File.file?(abs_path)
 
     source = File.read(abs_path)
@@ -16,12 +18,8 @@ module SourceHelper
     text_lines.pop if text_lines.size > 1 && text_lines.last == ""
     html_lines = highlighted_lines(abs_path, source)
 
-    focus = focus_line || 1
-    first = [focus - context, 1].max
-    last = [focus + context, text_lines.size].min
-
-    (first..last).map do |n|
-      Line.new(number: n, text: text_lines[n - 1], html: html_lines[n - 1], current: n == focus_line)
+    text_lines.each_with_index.map do |text, i|
+      Line.new(number: i + 1, text: text, html: html_lines[i], current: i + 1 == focus_line)
     end
   end
 

@@ -1,27 +1,24 @@
 <%# Attach to a running rdbg DAP server. The target server must have been started
-    with `rdbg --open --port <PORT> --nonstop bin/rails server` (or similar). %>
-<div class="rounded-lg border border-slate-800 bg-slate-900/40 p-4">
-  <%= form_with url: debug_session_path, method: :post, scope: :debug_session, class: "space-y-3" do |f| %>
-    <div class="grid grid-cols-12 gap-3">
-      <div class="col-span-3">
-        <%= f.label :host, "Host", class: "mb-1 block text-xs text-slate-400" %>
-        <%= f.text_field :host, value: "127.0.0.1",
-              class: "w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5 font-mono text-sm" %>
-      </div>
-      <div class="col-span-2">
-        <%= f.label :port, "Port", class: "mb-1 block text-xs text-slate-400" %>
-        <%= f.number_field :port, value: "12345",
-              class: "w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5 font-mono text-sm" %>
-      </div>
-    </div>
+    with `rdbg --open --port <PORT> --nonstop bin/rails server` (or similar).
+    Rendered inside the connect drawer, so it stacks rather than sits in a grid. %>
+<%= form_with url: debug_session_path, method: :post, scope: :debug_session, class: "space-y-4" do |f| %>
+  <div>
+    <%= f.label :host, "Host", class: "mb-1 block text-xs text-slate-400" %>
+    <%= f.text_field :host, value: "127.0.0.1",
+          class: "w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5 font-mono text-sm" %>
+  </div>
 
-    <div class="flex items-center gap-3">
-      <%= f.submit "Attach", class: "rounded-md bg-emerald-700 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-600" %>
-      <p class="text-xs text-slate-500">
-        Start the target with
-        <span class="font-mono text-slate-400">rdbg --open --port &lt;PORT&gt; --nonstop bin/rails server</span>,
-        then attach here and trigger a request.
-      </p>
-    </div>
-  <% end %>
-</div>
+  <div>
+    <%= f.label :port, "Port", class: "mb-1 block text-xs text-slate-400" %>
+    <%= f.number_field :port, value: "12345", data: {drawer_target: "autofocus"},
+          class: "w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5 font-mono text-sm" %>
+  </div>
+
+  <%= f.submit "Attach", class: "w-full rounded-md bg-emerald-700 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-600" %>
+
+  <p class="text-xs leading-relaxed text-slate-500">
+    Start the target with
+    <span class="font-mono text-slate-400">rdbg --open --port &lt;PORT&gt; --nonstop bin/rails server</span>,
+    then attach here and trigger a request.
+  </p>
+<% end %>

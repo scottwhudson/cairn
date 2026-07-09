@@ -1,5 +1,5 @@
 <% content_for :title, "Debug session" %>
-<%= turbo_stream_from "debug_session", channel: "DebugChannel" %>
+<%= turbo_stream_from Debug::SessionBroadcaster::STREAM, channel: "DebugChannel" %>
 
 <%
   active    = @client.present?
@@ -8,32 +8,27 @@
   panel_locals = { repo_path: repo_path, snapshot: snapshot, frame_index: 0 }
 %>
 
-<div class="flex h-[calc(100vh-9rem)] flex-col gap-3"
+<%# Session state + attach live in the layout's header, alongside the wordmark. %>
+<% content_for :header_actions do %>
+  <div id="session-status"><%= render "debug_sessions/status", state: (active ? @client.state : "idle") %></div>
+  <% unless active %>
+    <%= render "debug_sessions/connect_drawer" %>
+  <% end %>
+<% end %>
+
+<div class="flex h-full flex-col gap-3"
      data-controller="stepper"
      data-stepper-step-url-value="<%= step_debug_session_path %>"
      data-stepper-select-frame-url-value="<%= select_frame_debug_session_path %>"
      data-stepper-expand-local-url-value="<%= expand_local_debug_session_path %>"
      data-stepper-evaluate-url-value="<%= evaluate_debug_session_path %>">
 
-  <%# ── top bar: title + session controls ─────────────────────────── %>
-  <div class="flex items-center gap-3">
-    <div class="min-w-0">
-      <h1 class="truncate text-lg font-semibold">Live debug session</h1>
-      <p class="truncate text-xs text-slate-500">Attach to a Rails server started with <span class="font-mono text-slate-400">rdbg --open</span> and step through the current frame.</p>
-    </div>
-    <div id="session-status" class="ml-auto"><%= render "debug_sessions/status", state: (active ? @client.state : "idle") %></div>
-  </div>
-
   <div id="session-flash"></div>
-
-  <% unless active %>
-    <%= render "debug_sessions/connect_form" %>
-  <% end %>
 
   <%# ── panels ────────────────────────────────────────────────────── %>
   <div class="grid min-h-0 flex-1 grid-cols-12 gap-3">
     <section class="col-span-8 min-h-0 overflow-hidden rounded-lg border border-slate-800 bg-slate-900/40">
-      <div id="source-panel" class="h-full overflow-y-auto">
+      <div id="source-panel" class="h-full">
         <%= render "debug_sessions/source", **panel_locals %>
       </div>
     </section>
@@ -58,7 +53,4 @@
       <%= render "debug_sessions/repl", stopped: @client.state == :stopped %>
     </div>
   <% end %>
-
-  <%# ── controls ──────────────────────────────────────────────────── %>
-  <%= render "debug_sessions/controls" %>
 </div>

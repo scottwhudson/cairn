@@ -1,24 +1,33 @@
-<%# Center panel: source at the selected frame (top frame by default). %>
+<%# Center panel: source at the selected frame (top frame by default). Fills its
+    wrapper as a column — pinned header, scrolling code, pinned controls footer. %>
 <%
   frame_index = local_assigns.fetch(:frame_index, 0).to_i
   frame       = snapshot && snapshot[:frames] && snapshot[:frames][frame_index]
   abs_path    = frame ? frame[:file] : (snapshot && snapshot[:file])
   focus_line  = frame ? frame[:line] : (snapshot && snapshot[:line])
-  lines       = source_window(abs_path, focus_line)
+  lines       = source_lines(abs_path, focus_line)
   rel        = if abs_path && repo_path.present? then abs_path.sub("#{repo_path}/", "") else abs_path || "—" end
 %>
 
-<div class="sticky top-0 z-10 flex items-center gap-2 border-b border-slate-800 bg-slate-900/90 px-3 py-2 backdrop-blur">
-  <span class="font-mono text-xs text-slate-300"><%= rel %><%= ":#{focus_line}" if focus_line %></span>
-  <% if snapshot %>
-    <span class="rounded bg-sky-500/20 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-sky-300"><%= snapshot[:reason] %></span>
-  <% end %>
-</div>
-
-<% if lines.any? %>
-  <pre class="overflow-x-auto py-2 text-xs leading-relaxed"><% lines.each do |line| %><div class="flex <%= source_line_classes(line) %>"><span class="w-12 shrink-0 select-none pr-3 text-right text-slate-600"><%= line.number %></span><code class="rouge-src whitespace-pre pr-4 <%= "font-medium" if line.current %>"><%= line.html.present? ? line.html.html_safe : (line.text.presence || " ") %></code></div><% end %></pre>
-<% else %>
-  <div class="p-6 text-center text-sm text-slate-500">
-    <% if abs_path %>Could not read <span class="font-mono"><%= rel %></span>.<% else %>No source yet — attach, then trigger a request that hits your breakpoint.<% end %>
+<div class="flex h-full flex-col">
+  <div class="flex items-center gap-2 border-b border-slate-800 bg-slate-900/90 px-3 py-2">
+    <span class="font-mono text-xs text-slate-300"><%= rel %><%= ":#{focus_line}" if focus_line %></span>
+    <% if snapshot %>
+      <span class="rounded bg-sky-500/20 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-sky-300"><%= snapshot[:reason] %></span>
+    <% end %>
   </div>
-<% end %>
+
+  <div class="min-h-0 flex-1 overflow-y-auto" data-controller="source">
+    <% if lines.any? %>
+      <pre class="overflow-x-auto py-2 text-xs leading-relaxed"><% lines.each do |line| %><div class="flex <%= source_line_classes(line) %>"<%= ' data-source-target="current"'.html_safe if line.current %>><span class="w-12 shrink-0 select-none pr-3 text-right text-slate-600"><%= line.number %></span><code class="rouge-src whitespace-pre pr-4 <%= "font-medium" if line.current %>"><%= line.html.present? ? line.html.html_safe : (line.text.presence || " ") %></code></div><% end %></pre>
+    <% else %>
+      <div class="p-6 text-center text-sm text-slate-500">
+        <% if abs_path %>Could not read <span class="font-mono"><%= rel %></span>.<% else %>No source yet — attach, then trigger a request that hits your breakpoint.<% end %>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="border-t border-slate-800 bg-slate-900/90 px-3 py-2">
+    <%= render "debug_sessions/controls" %>
+  </div>
+</div>

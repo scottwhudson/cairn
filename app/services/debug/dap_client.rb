@@ -22,7 +22,7 @@ module Debug
     class Error < StandardError; end
     class Timeout < Error; end
 
-    attr_reader :snapshot, :capabilities, :state
+    attr_reader :host, :port, :snapshot, :capabilities, :state
     attr_accessor :repo_path  # source root for relative-path display in the UI
 
     def initialize(host:, port:, logger: nil, repo_path: nil)
