@@ -10,25 +10,7 @@
       </div>
       <div class="col-span-2">
         <%= f.label :port, "Port", class: "mb-1 block text-xs text-slate-400" %>
-        <%= f.number_field :port, placeholder: "12345",
-              class: "w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5 font-mono text-sm" %>
-      </div>
-      <div class="col-span-7">
-        <%= f.label :repo_path, "Repo path (for source display)", class: "mb-1 block text-xs text-slate-400" %>
-        <%= f.text_field :repo_path, placeholder: "/path/to/the/app/you/are/debugging",
-              class: "w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5 font-mono text-sm" %>
-      </div>
-    </div>
-
-    <div class="grid grid-cols-12 gap-3">
-      <div class="col-span-9">
-        <%= f.label :file, "Breakpoint file (relative to repo path, optional)", class: "mb-1 block text-xs text-slate-400" %>
-        <%= f.text_field :file, placeholder: "app/controllers/some_controller.rb",
-              class: "w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5 font-mono text-sm" %>
-      </div>
-      <div class="col-span-3">
-        <%= f.label :line, "Line", class: "mb-1 block text-xs text-slate-400" %>
-        <%= f.number_field :line, placeholder: "5",
+        <%= f.number_field :port, value: "12345",
               class: "w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5 font-mono text-sm" %>
       </div>
     </div>

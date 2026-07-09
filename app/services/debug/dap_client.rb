@@ -92,7 +92,7 @@ module Debug
     # surfaces as a 500.
     def expand(ref)
       return [] if ref.nil? || ref.to_i.zero?
-      variables_for(ref).map { |v| var_entry(v) }
+      clean_children(variables_for(ref).map { |v| var_entry(v) })
     rescue Error => e
       log("expand #{ref} failed: #{e.message}")
       []
@@ -337,6 +337,35 @@ module Debug
 
     def variables_for(ref)
       request("variables", {variablesReference: ref}).dig("body", "variables") || []
+    end
+
+    # rdbg pads a structured value's children with meta rows: a `#class` entry
+    # (redundant with the `type` column every row already shows) and, for strings
+    # it had to truncate, a `#dump` entry whose value is the *complete* content.
+    # rdbg caps every inspected value at 180 chars, so for a long string `#dump`
+    # is the only way to see the rest — but it arrives as an escaped Ruby literal
+    # labelled `#dump`, which reads as metadata rather than "the string". Drop the
+    # redundant class row and turn `#dump` into a readable "(full value)" row so
+    # expanding a string surfaces its actual contents.
+    def clean_children(entries)
+      entries.filter_map do |e|
+        case e[:name]
+        when "#class"
+          nil
+        when "#dump"
+          e.merge(name: "(full value)", value: undump(e[:value]), type: "String")
+        else
+          e
+        end
+      end
+    end
+
+    # Reverse String#dump (rdbg sends the full string as a dumped literal). Falls
+    # back to the raw dumped form if it isn't a well-formed dump.
+    def undump(dumped)
+      dumped.to_s.undump
+    rescue
+      dumped
     end
 
     def var_entry(v)

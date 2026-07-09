@@ -29,13 +29,11 @@ class DebugSessionsController < ApplicationController
     client = Debug::DapClient.new(
       host: connect_params[:host].presence || "127.0.0.1",
       port: connect_params[:port].to_i,
-      logger: Rails.logger,
-      repo_path: connect_params[:repo_path].presence
+      logger: Rails.logger
     )
     wire_callbacks(client)
 
     connect_with_retry(client)
-    set_breakpoint(client)
     client.configuration_done
     Debug::SessionRegistry.put(client)
 
@@ -114,7 +112,7 @@ class DebugSessionsController < ApplicationController
   private
 
   def connect_params
-    params.fetch(:debug_session, {}).permit(:host, :port, :repo_path, :file, :line)
+    params.fetch(:debug_session, {}).permit(:host, :port)
   end
 
   def require_client!
@@ -132,15 +130,6 @@ class DebugSessionsController < ApplicationController
       raise if i == attempts - 1
       sleep 0.2 # server may still be opening its port
     end
-  end
-
-  def set_breakpoint(client)
-    file = connect_params[:file].presence
-    line = connect_params[:line].to_i
-    return unless file && line.positive?
-
-    abs = File.expand_path(file, client.repo_path)
-    client.set_breakpoints(abs, [{line: line}])
   end
 
   def wire_callbacks(client)

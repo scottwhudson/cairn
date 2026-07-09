@@ -8,12 +8,12 @@
               data-action="stepper#toggleLocal"
               data-stepper-ref-param="<%= var[:ref] %>"
               aria-expanded="false"
-              class="shrink-0 select-none text-slate-500 transition-transform hover:text-slate-300 aria-expanded:rotate-90">▶</button>
+              class="shrink-0 select-none text-slate-500 transition-transform hover:text-slate-300 aria-expanded:rotate-90"><%= icon "chevron_right", class: "h-3.5 w-3.5" %></button>
     <% else %>
       <span class="w-[1ch] shrink-0"></span>
     <% end %>
     <span class="shrink-0 font-mono text-slate-300"><%= var[:name] %></span>
-    <span class="font-mono break-all text-emerald-300"><%= truncate(var[:value].to_s, length: 120) %></span>
+    <span class="inline-block max-h-40 overflow-y-auto font-mono break-all whitespace-pre-wrap text-emerald-300"><%= var[:value] %></span>
     <% if var[:type].present? %><span class="ml-auto shrink-0 text-[10px] text-slate-600"><%= var[:type] %></span><% end %>
   </div>
   <% if expandable %>

@@ -16,7 +16,7 @@
 </div>
 
 <% if lines.any? %>
-  <pre class="overflow-x-auto py-2 text-xs leading-relaxed"><% lines.each do |line| %><div class="flex <%= source_line_classes(line) %>"><span class="w-12 shrink-0 select-none pr-3 text-right text-slate-600"><%= line.number %></span><code class="whitespace-pre pr-4 <%= "text-sky-100 font-medium" if line.current %>"><%= line.text.presence || " " %></code></div><% end %></pre>
+  <pre class="overflow-x-auto py-2 text-xs leading-relaxed"><% lines.each do |line| %><div class="flex <%= source_line_classes(line) %>"><span class="w-12 shrink-0 select-none pr-3 text-right text-slate-600"><%= line.number %></span><code class="rouge-src whitespace-pre pr-4 <%= "font-medium" if line.current %>"><%= line.html.present? ? line.html.html_safe : (line.text.presence || " ") %></code></div><% end %></pre>
 <% else %>
   <div class="p-6 text-center text-sm text-slate-500">
     <% if abs_path %>Could not read <span class="font-mono"><%= rel %></span>.<% else %>No source yet — attach, then trigger a request that hits your breakpoint.<% end %>

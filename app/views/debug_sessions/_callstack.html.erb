@@ -18,7 +18,7 @@
                 data-action="stepper#selectFrame"
                 data-stepper-frame-param="<%= i %>"
                 class="flex w-full items-baseline gap-2 rounded px-2 py-1 text-left <%= i == selected ? "bg-slate-800" : "hover:bg-slate-800/50" %>">
-          <span class="w-4 shrink-0 text-sky-400"><%= "▶" if i == selected %></span>
+          <span class="w-4 shrink-0 self-center text-sky-400"><%= icon "chevron_right", class: "h-3.5 w-3.5" if i == selected %></span>
           <div class="min-w-0">
             <div class="truncate font-medium <%= i == selected ? "text-slate-100" : "text-slate-300" %>"><%= frame[:name] %></div>
             <div class="truncate font-mono text-[11px] text-slate-500"><%= rel %>:<%= frame[:line] %></div>
