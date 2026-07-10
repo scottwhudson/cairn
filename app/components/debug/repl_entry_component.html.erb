@@ -1,0 +1,11 @@
+<div class="border-l-2 <%= border_class %> pl-2">
+  <div class="text-slate-400">
+    <span class="select-none text-slate-600">»</span>
+    <code class="<%= "rouge-src" if echoed %>"><%= echoed || expression %></code>
+  </div>
+  <% if error? %>
+    <div class="pl-3 text-rose-300/90"><%= result[:value] %></div>
+  <% else %>
+    <%= render Debug::VarComponent.new(var: result_var) %>
+  <% end %>
+</div>

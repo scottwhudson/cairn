@@ -116,25 +116,25 @@ class SessionTest < ActiveSupport::TestCase
   test "panels focus the requested frame of the current stop" do
     attach(FakeClient.new(snapshot: SNAPSHOT))
 
-    assert_equal 1, Debug::Session.panels(frame: "1").first.locals[:frame_index]
+    assert_equal 1, Debug::Session.panels(frame: "1").first.frame_index
   end
 
   test "a frame beyond the stack clamps to the deepest one" do
     attach(FakeClient.new(snapshot: SNAPSHOT))
 
-    assert_equal 1, Debug::Session.panels(frame: "99").first.locals[:frame_index]
+    assert_equal 1, Debug::Session.panels(frame: "99").first.frame_index
   end
 
   test "a negative frame clamps to the top of the stack" do
     attach(FakeClient.new(snapshot: SNAPSHOT))
 
-    assert_equal 0, Debug::Session.panels(frame: "-3").first.locals[:frame_index]
+    assert_equal 0, Debug::Session.panels(frame: "-3").first.frame_index
   end
 
   test "a frameless stop clamps to zero rather than to -1" do
     attach(FakeClient.new(snapshot: {reason: "breakpoint", frames: []}))
 
-    assert_equal 0, Debug::Session.panels(frame: "2").first.locals[:frame_index]
+    assert_equal 0, Debug::Session.panels(frame: "2").first.frame_index
   end
 
   test "there are no panels without a stop to inspect" do

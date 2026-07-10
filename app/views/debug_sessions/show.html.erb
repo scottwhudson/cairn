@@ -3,14 +3,12 @@
 
 <%
   active    = @client.present?
-  snapshot  = @snapshot
   repo_path = @client&.repo_path
-  panel_locals = { repo_path: repo_path, snapshot: snapshot, frame_index: 0 }
 %>
 
 <%# Session state + attach live in the layout's header, alongside the wordmark. %>
 <% content_for :header_actions do %>
-  <div id="session-status"><%= render "debug_sessions/status", state: (active ? @client.state : "idle") %></div>
+  <%= render Debug::StatusComponent.new(state: (active ? @client.state : "idle"), client: @client) %>
   <% unless active %>
     <%= render "debug_sessions/connect_drawer" %>
   <% end %>
@@ -18,38 +16,33 @@
 
 <div class="flex h-full flex-col"
      data-controller="stepper"
-     data-stepper-step-url-value="<%= step_debug_session_path %>"
-     data-stepper-select-frame-url-value="<%= select_frame_debug_session_path %>"
-     data-stepper-expand-local-url-value="<%= expand_local_debug_session_path %>"
-     data-stepper-evaluate-url-value="<%= evaluate_debug_session_path %>">
+     data-stepper-steps-url-value="<%= debug_session_steps_path %>"
+     data-stepper-selected-frame-url-value="<%= debug_session_selected_frame_path %>"
+     data-stepper-evaluations-url-value="<%= debug_session_evaluations_path %>">
 
-  <div id="session-flash"></div>
+  <%# An empty stand-in, so an error always has something to replace. %>
+  <%= tag.div id: Debug::FlashComponent::ID %>
 
   <%# ── panels ────────────────────────────────────────────────────────
       One framed grid rather than free-floating cards: panels butt against each
       other and are separated by draggable hairlines. Each resizable track is
       sized from a custom property that the splitter controller rewrites; the
-      neighbouring `1fr` track soaks up the slack. %>
+      neighbouring `1fr` track soaks up the slack. Each panel component renders
+      its own grid cell, id and all. %>
   <div class="grid min-h-0 flex-1 overflow-hidden bg-slate-900/40"
        style="grid-template-rows: minmax(0, 1fr)<%= " auto minmax(0, var(--repl-h, 12rem))" if active %>">
 
     <div class="grid min-h-0" style="grid-template-columns: minmax(0, 1fr) auto minmax(0, var(--side-w, 22rem))">
-      <section id="source-panel" class="min-h-0">
-        <%= render "debug_sessions/source", **panel_locals %>
-      </section>
+      <%= render Debug::SourceComponent.new(snapshot: @snapshot, repo_path: repo_path) %>
 
       <%= render "debug_sessions/gutter", axis: "col", variable: "--side-w", edge: "right", min: 240 %>
 
       <aside class="grid min-h-0" style="grid-template-rows: minmax(0, var(--callstack-h, 1fr)) auto minmax(0, 1fr)">
-        <div id="callstack-panel" class="min-h-0 overflow-y-auto">
-          <%= render "debug_sessions/callstack", **panel_locals %>
-        </div>
+        <%= render Debug::CallstackComponent.new(snapshot: @snapshot, repo_path: repo_path) %>
 
         <%= render "debug_sessions/gutter", axis: "row", variable: "--callstack-h", edge: "top", min: 80 %>
 
-        <div id="locals-panel" class="min-h-0 overflow-y-auto">
-          <%= render "debug_sessions/locals", **panel_locals %>
-        </div>
+        <%= render Debug::LocalsComponent.new(snapshot: @snapshot) %>
       </aside>
     </div>
 
@@ -57,9 +50,7 @@
     <% if active %>
       <%= render "debug_sessions/gutter", axis: "row", variable: "--repl-h", edge: "bottom", min: 80 %>
 
-      <div id="repl-panel" class="min-h-0">
-        <%= render "debug_sessions/repl", stopped: @client.state == :stopped %>
-      </div>
+      <%= render Debug::ReplComponent.new(stopped: @client.state == :stopped) %>
     <% end %>
   </div>
 </div>

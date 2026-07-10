@@ -1,0 +1,10 @@
+<div class="flex items-center gap-0.5">
+  <button data-action="stepper#stepOver" title="Step over (↓)" class="<%= step_classes %>"><%= helpers.icon "arrow_right", class: "h-3.5 w-3.5" %>over</button>
+  <button data-action="stepper#stepIn" title="Step in (↑)" class="<%= step_classes %>"><%= helpers.icon "arrow_down", class: "h-3.5 w-3.5" %>in</button>
+  <button data-action="stepper#stepOut" title="Step out (⇧↑)" class="<%= step_classes %>"><%= helpers.icon "arrow_up", class: "h-3.5 w-3.5" %>out</button>
+
+  <span class="mx-1.5 h-4 w-px bg-slate-800" aria-hidden="true"></span>
+
+  <button data-action="stepper#continue" title="Continue to next breakpoint (→)"
+          class="inline-flex items-center gap-1.5 rounded px-2 py-1 text-xs font-medium text-sky-400 transition-colors hover:bg-sky-500/10 hover:text-sky-300 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-sky-700"><%= helpers.icon "play", class: "h-3.5 w-3.5" %>continue</button>
+</div>

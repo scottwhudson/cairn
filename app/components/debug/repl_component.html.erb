@@ -1,0 +1,28 @@
+<div id="<%= id %>" class="min-h-0">
+  <div class="flex h-full min-h-0 flex-col">
+    <div class="flex h-10 shrink-0 items-center gap-2 border-b border-slate-800 px-3">
+      <h2 class="text-xs font-semibold uppercase tracking-wide text-slate-400">REPL</h2>
+      <span class="text-[11px] text-slate-600"><%= stopped? ? "runs in the selected frame" : "paused — active at the next stop" %></span>
+    </div>
+
+    <%# The id is Debug::EvaluationsController's append target; the Stimulus target
+        is how stepper#evaluate scrolls the log without naming that id in JS. %>
+    <div id="<%= output_id %>" data-stepper-target="replOutput"
+         class="min-h-0 flex-1 space-y-1.5 overflow-y-auto px-3 py-2 font-mono text-xs">
+      <% if stopped? %>
+        <p class="text-slate-600">Evaluate an expression at the current stop — e.g. <span class="text-slate-500">params</span>, <span class="text-slate-500">@user&amp;.email</span>, <span class="text-slate-500">1 + 1</span>.</p>
+      <% else %>
+        <p class="text-slate-600">Resumed — the console reactivates at the next breakpoint.</p>
+      <% end %>
+    </div>
+
+    <form data-action="submit->stepper#evaluate" class="flex items-center gap-2 border-t border-slate-800 px-3 py-2">
+      <span class="select-none font-mono text-xs <%= stopped? ? "text-slate-500" : "text-slate-700" %>">»</span>
+      <input type="text"
+             data-stepper-target="replInput"
+             <%= "disabled" unless stopped? %>
+             class="flex-1 bg-transparent font-mono text-xs text-slate-100 outline-none placeholder:text-slate-600 disabled:cursor-not-allowed disabled:text-slate-600"
+             placeholder="<%= stopped? ? "expression…" : "resumed — no active stop" %>" autocomplete="off" spellcheck="false" />
+    </form>
+  </div>
+</div>

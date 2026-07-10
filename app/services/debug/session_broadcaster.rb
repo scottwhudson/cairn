@@ -4,6 +4,10 @@ module Debug
   # The DapClient's dispatcher thread drives this from outside any request, so it
   # broadcasts rather than renders: a stop that arrives seconds after the step
   # request returned still lands on the page.
+  #
+  # Every region is a component that owns the id it renders, so nothing here names
+  # a dom id or a partial: this decides *what* to repaint, and each component
+  # knows *where*.
   class SessionBroadcaster
     # Turbo stream every subscriber (the show page) listens on.
     STREAM = "debug_session".freeze
@@ -27,40 +31,23 @@ module Debug
         broadcast_panels(nil)
         broadcast_repl(stopped: false)
       end
-      broadcast_update("session-status", "status", state: state)
+      StatusComponent.new(state: state, client: @client).broadcast_replace_to(@stream)
     end
 
     def error(command, message)
-      Turbo::StreamsChannel.broadcast_replace_to(
-        @stream, target: "session-flash", partial: "debug_sessions/flash",
-        locals: {message: "#{command} failed: #{message}"}
-      )
+      FlashComponent.new(message: "#{command} failed: #{message}").broadcast_replace_to(@stream)
     end
 
     private
 
-    # `update` (not `replace`) so the id-bearing wrapper div survives — replacing it
-    # strips the id, and the next broadcast (e.g. the reset on resume) can't find its
-    # target and silently no-ops, leaving the stale frame on screen.
     def broadcast_panels(snapshot)
-      Panels.for(@client, snapshot).each do |panel|
-        Turbo::StreamsChannel.broadcast_update_to(
-          @stream, target: panel.target, partial: panel.partial, locals: panel.locals
-        )
-      end
+      Panels.for(@client, snapshot).each { |panel| panel.broadcast_replace_to(@stream) }
     end
 
-    # Re-render the whole REPL region. `update` keeps the id-bearing wrapper, and
-    # re-rendering clears the log — so exiting a stop wipes stale entries and
-    # disables input until the next stop reactivates it.
+    # Re-render the whole REPL region. Re-rendering clears the log, so exiting a
+    # stop wipes stale entries and disables input until the next stop reactivates it.
     def broadcast_repl(stopped:)
-      broadcast_update("repl-panel", "repl", stopped: stopped)
-    end
-
-    def broadcast_update(target, partial, **locals)
-      Turbo::StreamsChannel.broadcast_update_to(
-        @stream, target: target, partial: "debug_sessions/#{partial}", locals: locals
-      )
+      ReplComponent.new(stopped: stopped).broadcast_replace_to(@stream)
     end
   end
 end

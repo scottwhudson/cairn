@@ -1,7 +1,0 @@
-<%# A list of variable rows. Used both for a frame's top-level locals and, via
-    expand_local, for the children streamed into a var's nested container. %>
-<% if vars.blank? %>
-  <p class="px-3 py-1.5 text-xs text-slate-600">(empty)</p>
-<% else %>
-  <%= render partial: "debug_sessions/var", collection: vars, as: :var %>
-<% end %>

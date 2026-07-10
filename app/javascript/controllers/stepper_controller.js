@@ -5,9 +5,9 @@ import { Controller } from "@hotwired/stimulus"
 // over the session stream, which re-renders the panels.
 export default class extends Controller {
   static values = {
-    stepUrl: String, selectFrameUrl: String, expandLocalUrl: String, evaluateUrl: String
+    stepsUrl: String, selectedFrameUrl: String, evaluationsUrl: String
   }
-  static targets = ["replInput"]
+  static targets = ["replInput", "replOutput"]
 
   connect() {
     // Which call-stack frame the REPL evaluates in. Every new stop re-renders the
@@ -29,13 +29,15 @@ export default class extends Controller {
 
   step(command) {
     this.selectedFrame = 0
-    this.post(this.stepUrlValue, { command })
+    this.request(this.stepsUrlValue, { body: { command } })
   }
 
   // ── frame selection (inspects a frame of the current stop) ─────────
   selectFrame(event) {
     this.selectedFrame = event.params.frame
-    this.post(this.selectFrameUrlValue, { frame: event.params.frame }, /* renderStream */ true)
+    this.request(this.selectedFrameUrlValue, {
+      method: "PATCH", body: { frame: event.params.frame }, renderStream: true
+    })
   }
 
   // ── REPL (evaluates in the selected frame) ─────────────────────────
@@ -46,19 +48,23 @@ export default class extends Controller {
     const expression = input.value.trim()
     if (!expression) return
     input.value = ""
-    await this.post(this.evaluateUrlValue, { expression, frame: this.selectedFrame }, /* renderStream */ true)
-    const out = document.getElementById("repl-output")
-    if (out) out.scrollTop = out.scrollHeight
+    await this.request(this.evaluationsUrlValue, {
+      body: { expression, frame: this.selectedFrame }, renderStream: true
+    })
+    if (!this.hasReplOutputTarget) return
+    const out = this.replOutputTarget
+    out.scrollTop = out.scrollHeight
   }
 
   // ── local expansion (drills into a structured value) ───────────────
   // Lazy-loads the value's children on first open, then just toggles
-  // visibility. The ref is a handle into the current stop, so containers
+  // visibility. Containers are keyed by a handle into the current stop, so they
   // are re-created fresh on every stop and never carry stale expansions.
+  // Each row carries its own locals URL and container id, both built in the view.
   async toggleLocal(event) {
-    const ref = event.params.ref
+    const { container: containerId, url } = event.params
     const button = event.currentTarget
-    const container = document.getElementById(`var-children-${ref}`)
+    const container = document.getElementById(containerId)
     if (!container) return
 
     const open = button.getAttribute("aria-expanded") === "true"
@@ -69,7 +75,7 @@ export default class extends Controller {
     }
 
     if (!container.dataset.loaded) {
-      await this.post(this.expandLocalUrlValue, { ref }, /* renderStream */ true)
+      await this.request(url, { method: "GET", renderStream: true })
       container.dataset.loaded = "true"
     }
     container.classList.remove("hidden")
@@ -87,15 +93,15 @@ export default class extends Controller {
     if (handler) { event.preventDefault(); handler() }
   }
 
-  async post(url, body, renderStream = false) {
+  async request(url, { method = "POST", body, renderStream = false } = {}) {
     const response = await fetch(url, {
-      method: "POST",
+      method,
       headers: {
-        "Content-Type": "application/json",
+        ...(body ? { "Content-Type": "application/json" } : {}),
         "X-CSRF-Token": this.csrfToken(),
         "Accept": "text/vnd.turbo-stream.html, text/html",
       },
-      body: JSON.stringify(body),
+      body: body ? JSON.stringify(body) : undefined,
     })
     if (renderStream && response.ok) {
       const text = await response.text()

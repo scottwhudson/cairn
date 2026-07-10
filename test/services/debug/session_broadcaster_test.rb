@@ -1,30 +1,36 @@
 require "test_helper"
 
-class SessionBroadcasterTest < ActiveSupport::TestCase
-  FakeClient = Struct.new(:repo_path)
+class SessionBroadcasterTest < ViewComponent::TestCase
+  FakeClient = Struct.new(:repo_path, :break_on_exception)
 
-  Broadcast = Struct.new(:action, :stream, :target, :partial, :locals)
+  Broadcast = Struct.new(:action, :stream, :target, :renderable)
 
   def setup
-    @client = FakeClient.new("/repo")
+    @client = FakeClient.new("/repo", false)
     @broadcaster = Debug::SessionBroadcaster.new(@client)
-    @snapshot = {reason: "breakpoint", frames: [{id: 1}]}
+    @snapshot = {reason: "breakpoint", frames: [{id: 1, name: "attach", file: "/repo/a.rb", line: 1, locals: []}]}
   end
 
   test "a stop repopulates the panels and reactivates the repl" do
     sent = capture_broadcasts { @broadcaster.stopped(@snapshot) }
 
     assert_equal %w[source-panel callstack-panel locals-panel repl-panel], sent.map(&:target)
-    assert_equal [@snapshot] * 3, sent.first(3).map { |b| b.locals[:snapshot] }
-    assert_equal({stopped: true}, sent.last.locals)
+    assert_includes render_inline(sent[1].renderable).to_html, "attach"
+    assert_empty render_inline(sent.last.renderable).css("input[disabled]"), "the repl input is live at a stop"
   end
 
-  # Panels must be *updated*, never replaced: replacing strips the id-bearing
-  # wrapper, and the next broadcast silently no-ops against a missing target.
-  test "panels are updated in place, so their wrapper ids survive" do
+  # Each component renders its own id-bearing root, so a replace hands the id back.
+  # There is no page-owned wrapper left that an update would have to preserve.
+  test "every region is replaced rather than updated" do
     sent = capture_broadcasts { @broadcaster.stopped(@snapshot) }
 
-    assert_equal [:update], sent.map(&:action).uniq
+    assert_equal [:replace], sent.map(&:action).uniq
+  end
+
+  test "the broadcaster names no dom ids of its own" do
+    sent = capture_broadcasts { @broadcaster.stopped(@snapshot) }
+
+    assert_equal sent.map { |b| b.renderable.id }, sent.map(&:target)
   end
 
   test "everything goes to the stream the show page subscribes to" do
@@ -37,10 +43,9 @@ class SessionBroadcasterTest < ActiveSupport::TestCase
     test "#{state} blanks the panels and disables the repl" do
       sent = capture_broadcasts { @broadcaster.state_changed(state) }
 
-      panels = sent.first(3)
-      assert_equal %w[source-panel callstack-panel locals-panel], panels.map(&:target)
-      assert_equal [nil] * 3, panels.map { |b| b.locals[:snapshot] }
-      assert_equal({stopped: false}, sent[3].locals)
+      assert_equal %w[source-panel callstack-panel locals-panel], sent.first(3).map(&:target)
+      assert_includes render_inline(sent[1].renderable).to_html, "No active frame"
+      refute_empty render_inline(sent[3].renderable).css("input[disabled]"), "the repl input is dead once resumed"
     end
   end
 
@@ -48,7 +53,7 @@ class SessionBroadcasterTest < ActiveSupport::TestCase
     sent = capture_broadcasts { @broadcaster.state_changed(:running) }
 
     assert_equal "session-status", sent.last.target
-    assert_equal({state: :running}, sent.last.locals)
+    assert_includes render_inline(sent.last.renderable).to_html, "running"
   end
 
   # Stopping is the state that *has* a frame to show; blanking here would wipe
@@ -64,7 +69,7 @@ class SessionBroadcasterTest < ActiveSupport::TestCase
 
     assert_equal [:replace], sent.map(&:action)
     assert_equal "session-flash", sent.sole.target
-    assert_equal({message: "stepIn failed: boom"}, sent.sole.locals)
+    assert_includes render_inline(sent.sole.renderable).to_html, "stepIn failed: boom"
   end
 
   private
@@ -74,9 +79,7 @@ class SessionBroadcasterTest < ActiveSupport::TestCase
   def capture_broadcasts
     sent = []
     recorder = ->(action) {
-      ->(stream, **opts) {
-        sent << Broadcast.new(action, stream, opts[:target], opts[:partial], opts[:locals])
-      }
+      ->(stream, **opts) { sent << Broadcast.new(action, stream, opts[:target], opts[:renderable]) }
     }
 
     stub_method(Turbo::StreamsChannel, :broadcast_update_to, recorder.call(:update)) do

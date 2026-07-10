@@ -1,3 +1,4 @@
+<%# locals: (axis:, variable:, edge:, min: 120) %>
 <%# A draggable divider between two grid panels. The track is a 1px hairline
     flush against the panels on either side, but pitched brighter than the static
     slate-800 borders around it — the extra contrast is what marks it as a handle
@@ -7,10 +8,7 @@
 
     Drag to resize, double-click to restore the default. `axis` is the divider's
     own orientation: a "col" gutter is a vertical line you drag sideways. %>
-<%
-  col = axis.to_s == "col"
-  min = local_assigns.fetch(:min, 120)
-%>
+<% col = axis.to_s == "col" %>
 <div class="relative bg-slate-400 transition-colors hover:bg-sky-300 active:bg-sky-200 <%= col ? "w-px cursor-col-resize" : "h-px cursor-row-resize" %>"
      data-controller="splitter"
      data-splitter-variable-value="<%= variable %>"

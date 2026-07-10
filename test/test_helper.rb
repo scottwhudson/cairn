@@ -18,6 +18,8 @@ module MethodStubbing
   end
 end
 
+Dir[Rails.root.join("test/support/**/*.rb")].sort.each { |file| require file }
+
 module ActiveSupport
   class TestCase
     include MethodStubbing
