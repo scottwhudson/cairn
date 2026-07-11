@@ -2,9 +2,9 @@
 
 A browser-based debugger that **attaches to a running Ruby app** and lets you step
 through it live. It drives `rdbg` (Ruby's `debug` gem) over the Debug Adapter
-Protocol: set a breakpoint, trigger a request, then step through frames while
-inspecting the call stack, locals, and evaluating expressions in a REPL — all
-from the browser.
+Protocol: attach, trigger a request that reaches a stop, then step through frames
+while inspecting the call stack, locals, and evaluating expressions in a REPL —
+all from the browser.
 
 ## What's here
 
@@ -39,9 +39,10 @@ Key files: `app/controllers/debug_sessions_controller.rb`,
 `app/services/debug/dap_client.rb`, `app/services/debug/session_registry.rb`,
 `app/javascript/controllers/stepper_controller.js`.
 
-> **DAP notes** (rdbg 1.11.1): the client sends `attach {localfs: true}` so
-> breakpoints verify against local paths. Execution commands are event-driven
-> (fire-and-forget; the `stopped` event drives the UI).
+> **DAP notes** (rdbg 1.11.1): the client sends `attach {localfs: true}` so the
+> target's absolute source paths map to local files (for source display).
+> Execution commands are event-driven (fire-and-forget; the `stopped` event
+> drives the UI).
 
 ## Running
 
@@ -59,9 +60,13 @@ Start the app you want to debug under rdbg, e.g.:
 rdbg --open --port 12345 --nonstop bin/rails server
 ```
 
-Then open <http://localhost:3000>, fill in the host/port (and optionally a
-breakpoint file + line and the debuggee's repo path for source display), click
-**Attach**, and trigger a request that hits the breakpoint.
+Then open <http://localhost:3000>, fill in the host/port (and optionally the
+debuggee's repo path for source display), click **Attach**, and trigger a
+request that reaches a stop.
+
+Cairn doesn't set breakpoints — stops come from the target itself: a
+`binding.break` in its source, or arming the exception catchpoint (from the
+session header) to stop wherever it raises.
 
 ## Notes / scope
 

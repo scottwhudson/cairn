@@ -16,8 +16,12 @@ module Debug
   #     since the reader would be waiting on itself to deliver the response.
   #
   # Handshake (verified against rdbg 1.11.1):
-  #   initialize -> attach{localfs:true} -> (initialized event) -> setBreakpoints
-  #   -> configurationDone -> stopped(pause) -> continue -> stopped(breakpoint)
+  #   initialize -> attach{localfs:true} -> (initialized event) -> configurationDone
+  #   -> stopped(pause) -> continue -> runs until the target's own stop
+  #
+  # We don't set line breakpoints: stops come from the target declaring them
+  # itself (a `binding.break` in its source, or the exception catchpoint armed
+  # via #break_on_exception=). This client only drives and inspects those stops.
   class DapClient
     class Error < StandardError; end
     class Timeout < Error; end
@@ -82,16 +86,6 @@ module Debug
       wait_for_initialized(timeout)
       transition(:connected)
       self
-    end
-
-    # breakpoints: [{ line:, condition:, waypoint_id: }, ...]
-    # Returns the verified breakpoint descriptors from the adapter.
-    def set_breakpoints(abs_path, breakpoints)
-      resp = request("setBreakpoints", {
-        source: {path: abs_path},
-        breakpoints: breakpoints.map { |b| {line: b[:line], condition: b[:condition]}.compact }
-      })
-      resp.dig("body", "breakpoints") || []
     end
 
     def configuration_done
