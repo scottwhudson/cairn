@@ -24,6 +24,18 @@ module Cairn
     # Common ones are `templates`, `generators`, or `middleware`, for example.
     config.autoload_lib(ignore: %w[assets tasks])
 
+    # Keep the Tailwind source out of the served asset path. It shares the logical
+    # name "application.css" with app/assets/stylesheets/application.css, so if both
+    # are on the load path Propshaft raises on the ambiguity. tailwindcss-rails
+    # excludes it too, but only in development/test where the gem is loaded — this
+    # makes production (and the eventual packaged gem, which ships the compiled CSS
+    # and drops the compiler) exclude it regardless. Mirrors the gem's engine hook.
+    initializer "cairn.exclude_tailwind_source", before: "propshaft.append_assets_path" do |app|
+      if app.config.assets.excluded_paths # nil unless Propshaft is loaded
+        app.config.assets.excluded_paths << Rails.root.join("app/assets/tailwind")
+      end
+    end
+
     # Configuration for the application, engines, and railties goes here.
     #
     # These settings can be overridden in specific environments using the files

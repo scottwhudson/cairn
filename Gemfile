@@ -12,8 +12,6 @@ gem "importmap-rails"
 gem "turbo-rails"
 # Hotwire's modest JavaScript framework [https://stimulus.hotwired.dev]
 gem "stimulus-rails"
-# Use Tailwind CSS [https://github.com/rails/tailwindcss-rails]
-gem "tailwindcss-rails"
 # Syntax highlighting for the source pane [https://github.com/rouge-ruby/rouge]
 gem "rouge"
 # The self-refreshing regions of the debugger UI [https://viewcomponent.org]
@@ -29,6 +27,11 @@ gem "tzinfo-data", platforms: %i[windows jruby]
 gem "bootsnap", require: false
 
 group :development, :test do
+  # Tailwind is a build-time only tool: it regenerates the committed static
+  # app/assets/builds/tailwind.css. Production/the packaged gem serves that file
+  # directly and doesn't need the compiler. [https://github.com/rails/tailwindcss-rails]
+  gem "tailwindcss-rails"
+
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
   gem "debug", platforms: %i[mri windows], require: "debug/prelude"
 

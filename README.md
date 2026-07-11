@@ -46,13 +46,18 @@ Key files: `app/controllers/debug_sessions_controller.rb`,
 
 ## Running
 
-Requires Ruby 4.0, PostgreSQL, and the `debug` gem (bundled — provides `rdbg`).
+Requires Ruby 4.0 and the `debug` gem (bundled — provides `rdbg`). There's no
+database — Cairn persists nothing.
 
 ```bash
-bin/setup                 # or: bundle install && bin/rails db:prepare
-bin/rails tailwindcss:build
+bin/setup                 # or: bundle install
 bin/dev                   # or: bin/rails server
 ```
+
+The compiled Tailwind CSS is committed (`app/assets/builds/tailwind.css`), so
+there's no asset build to run before booting. If you change the UI, regenerate it
+with `bin/rails tailwindcss:build` and commit the result — CI's
+`tailwindcss:verify` fails if the commit drifts from the templates.
 
 Start the app you want to debug under rdbg, e.g.:
 

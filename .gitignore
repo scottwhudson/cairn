@@ -36,6 +36,10 @@
 
 /app/assets/builds/*
 !/app/assets/builds/.keep
+# tailwind.css is a committed, static artifact — served in prod without the
+# tailwindcss-rails build tool. Regenerate with `bin/rails tailwindcss:build`;
+# CI's `tailwindcss:verify` fails if the commit drifts from the templates.
+!/app/assets/builds/tailwind.css
 
 # Personal Cairn session defaults (machine-specific paths). See .cairnrc.example.
 /.cairnrc
