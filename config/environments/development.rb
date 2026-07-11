@@ -28,25 +28,8 @@ Rails.application.configure do
   # Change to :null_store to avoid any caching.
   config.cache_store = :memory_store
 
-  # Don't care if the mailer can't send.
-  config.action_mailer.raise_delivery_errors = false
-
-  # Make template changes take effect immediately.
-  config.action_mailer.perform_caching = false
-
-  # Set localhost to be used by links generated in mailer templates.
-  config.action_mailer.default_url_options = {host: "localhost", port: 3000}
-
   # Print deprecation notices to the Rails logger.
   config.active_support.deprecation = :log
-
-  # Highlight code that enqueued background job in logs.
-  config.active_job.verbose_enqueue_logs = true
-
-  # The live Debug::DapClient is created in the Puma web process and parked in
-  # Debug::SessionRegistry; its dispatcher thread broadcasts stop updates through
-  # the async ActionCable adapter (same process), so web requests see them.
-  config.active_job.queue_adapter = :async
 
   # Highlight code that triggered redirect in logs.
   config.action_dispatch.verbose_redirect_logs = true
