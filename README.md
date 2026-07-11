@@ -54,10 +54,9 @@ bin/setup                 # or: bundle install
 bin/dev                   # or: bin/rails server
 ```
 
-The compiled Tailwind CSS is committed (`app/assets/builds/tailwind.css`), so
-there's no asset build to run before booting. If you change the UI, regenerate it
-with `bin/rails tailwindcss:build` and commit the result — CI's
-`tailwindcss:verify` fails if the commit drifts from the templates.
+The compiled Tailwind CSS is committed as a static artifact
+(`app/assets/builds/tailwind.css`) and served directly, so there's no asset build
+to run before booting. See [Styling](#styling-tailwind) below if you touch the UI.
 
 Start the app you want to debug under rdbg, e.g.:
 
@@ -65,13 +64,41 @@ Start the app you want to debug under rdbg, e.g.:
 rdbg --open --port 12345 --nonstop bin/rails server
 ```
 
-Then open <http://localhost:3000>, fill in the host/port (and optionally the
+Then open <http://localhost:3001> (`bin/dev` defaults to 3001, leaving 3000 for
+the debuggee), fill in the host/port (and optionally the
 debuggee's repo path for source display), click **Attach**, and trigger a
 request that reaches a stop.
 
 Cairn doesn't set breakpoints — stops come from the target itself: a
 `binding.break` in its source, or arming the exception catchpoint (from the
 session header) to stop wherever it raises.
+
+## Styling (Tailwind)
+
+Tailwind is a **build-time-only** tool here. The compiled stylesheet is committed
+as a static asset (`app/assets/builds/tailwind.css`) and served as-is in every
+environment — production never runs the compiler. Accordingly, `tailwindcss-rails`
+lives in the `:development, :test` group of the `Gemfile`, and there's no CSS
+watcher process in `Procfile.dev`.
+
+If you change the templates, regenerate and commit the CSS:
+
+```bash
+bin/rails tailwindcss:build   # rewrites app/assets/builds/tailwind.css
+```
+
+The committed copy must never drift from the templates it's built from. A
+`tailwindcss:verify` rake task (`lib/tasks/tailwindcss_verify.rake`) rebuilds and
+fails if the result differs from what's checked in. It runs in three places so a
+stale commit can't slip through:
+
+- `bin/dev` — verifies before booting the server
+- `bin/ci` (`config/ci.rb`) and the GitHub Actions `assets` job — fail the build
+
+Output is deterministic: the Tailwind CLI version is pinned via `tailwindcss-ruby`
+in `Gemfile.lock`, so a rebuild reproduces byte-identical CSS across machines. The
+Tailwind source (`app/assets/tailwind`) is excluded from the served asset path in
+`config/application.rb` so Propshaft doesn't collide it with the built stylesheet.
 
 ## Notes / scope
 
