@@ -5,6 +5,12 @@ if ! gem list foreman -i --silent; then
   gem install foreman
 fi
 
+# Fail fast if the committed Tailwind CSS is stale before booting the server
+if ! bin/rails tailwindcss:verify; then
+  echo "Tailwind verification failed. Aborting." >&2
+  exit 1
+fi
+
 # Default to port 3001 if not specified (3000 is left for the debuggee app)
 export PORT="${PORT:-3001}"
 
