@@ -34,7 +34,7 @@ class DebugSessionsControllerTest < ActionDispatch::IntegrationTest
     args = nil
     stub_session(:attach, ->(**kwargs) {
       args = kwargs
-      FakeClient.new
+      Debug::Session.new(FakeClient.new)
     }) do
       post debug_session_path, params: {debug_session: {host: "127.0.0.1", port: "12345"}}
     end
@@ -67,7 +67,7 @@ class DebugSessionsControllerTest < ActionDispatch::IntegrationTest
     args = nil
     stub_session(:attach, ->(**kwargs) {
       args = kwargs
-      FakeClient.new
+      Debug::Session.new(FakeClient.new)
     }) do
       post debug_session_path, params: {debug_session: {port: "12345", repo_path: "/etc", logger: "evil"}}
     end

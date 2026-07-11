@@ -6,7 +6,7 @@ module Debug
       expression = params[:expression].to_s.strip
       return head(:no_content) if expression.blank?
 
-      result = Session.evaluate(expression, frame: params[:frame])
+      result = @session.evaluate(expression, frame: params[:frame])
       render turbo_stream: turbo_stream.append(
         ReplComponent::OUTPUT_ID, ReplEntryComponent.new(expression: expression, result: result)
       )

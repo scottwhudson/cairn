@@ -3,6 +3,12 @@
 # session's answers into responses. These helpers stand in for the session (whose
 # real methods talk to a socket) so no rdbg server is needed, and let the tests
 # assert on that translation.
+#
+# Direction B split the session from its client: Debug::Session.current hands back
+# a Session that wraps the DapClient. So the helpers below wrap a FakeClient in a
+# real Session and stub whichever surface a test drives — the stop-scoped methods
+# (step/panels/expand/evaluate/break_on_exception) on the session instance, and
+# the lifecycle methods (attach/detach) on the class.
 module DebugSessionTestHelper
   SOURCE = Rails.root.join("app/services/debug/session.rb").to_s
 
@@ -28,12 +34,29 @@ module DebugSessionTestHelper
     def repo_path = Rails.root.to_s
   end
 
-  def stub_session(method, impl, &block) = stub_method(Debug::Session, method, impl, &block)
+  # The lifecycle calls stay on the class; everything else is a stop-scoped method
+  # on the session instance `current` returns.
+  LIFECYCLE = %i[attach detach].freeze
 
-  def with_session(current:, &block) = stub_session(:current, -> { current }, &block)
+  # Stub a session method for the duration of the block. Lifecycle calls are
+  # stubbed on the class; stop-scoped calls on the live session that `current`
+  # hands back (standing one up if the test didn't pin its own client).
+  def stub_session(method, impl, &block)
+    return stub_method(Debug::Session, method, impl, &block) if LIFECYCLE.include?(method)
 
-  # StatusComponent decides it's attached from the client it's handed, so stubbing
-  # the session is enough — nothing reads the registry behind our back.
+    return stub_method(@session_double, method, impl, &block) if @session_double
+
+    with_attached_session(FakeClient.new) { stub_method(@session_double, method, impl, &block) }
+  end
+
+  # Pin what `Debug::Session.current` returns for the block: a real Session wrapping
+  # the given client, or a NullSession when detached (current: nil).
+  def with_session(current:, &block)
+    session = current.nil? ? Debug::Session::NullSession.new : Debug::Session.new(current)
+    @session_double = session
+    stub_method(Debug::Session, :current, -> { @session_double }, &block)
+  end
+
   def with_attached_session(client, &block) = with_session(current: client, &block)
 
   def turbo_streams = css_select("turbo-stream")

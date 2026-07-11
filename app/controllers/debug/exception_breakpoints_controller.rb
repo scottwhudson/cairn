@@ -12,11 +12,10 @@ module Debug
     # Re-renders the status region so the toggle reflects what the adapter
     # actually accepted, not what was clicked.
     def arm(enabled)
-      client = Session.current
-      return head(:unprocessable_entity) unless client
+      return head(:unprocessable_entity) unless @session.attached?
 
-      Session.break_on_exception(enabled)
-      replace(StatusComponent.new(state: client.state, client: client))
+      @session.break_on_exception(enabled)
+      replace(StatusComponent.new(state: @session.state, client: @session.client))
     rescue DapClient::Error => e
       replace(FlashComponent.new(message: "Could not arm exception breakpoint: #{e.message}"))
     end

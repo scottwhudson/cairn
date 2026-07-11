@@ -4,7 +4,7 @@ module Debug
   # into the current stop, and a stale one has nothing to show.
   class LocalsController < ApplicationController
     def show
-      children = Session.expand(params[:id])
+      children = @session.expand(params[:id])
       return head(:no_content) unless children
 
       # `update`, not `replace`: the container is a shell VarComponent renders and

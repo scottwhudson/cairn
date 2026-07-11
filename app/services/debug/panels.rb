@@ -12,9 +12,9 @@ module Debug
     def self.for(client, snapshot, frame_index: 0)
       repo_path = client&.repo_path
       [
-        SourceComponent.new(snapshot: snapshot, repo_path: repo_path, frame_index: frame_index),
-        CallstackComponent.new(snapshot: snapshot, repo_path: repo_path, frame_index: frame_index),
-        LocalsComponent.new(snapshot: snapshot, frame_index: frame_index)
+        SourceComponent.new(snapshot:, repo_path:, frame_index:),
+        CallstackComponent.new(snapshot:, repo_path:, frame_index:),
+        LocalsComponent.new(snapshot:, frame_index:)
       ]
     end
   end

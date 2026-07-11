@@ -3,7 +3,7 @@ module Debug
   # follows is broadcast to the stream, not rendered here.
   class StepsController < ApplicationController
     def create
-      return head(:unprocessable_entity) unless Session.step(params[:command])
+      return head(:unprocessable_entity) unless @session.step(params[:command])
       head :accepted
     end
   end

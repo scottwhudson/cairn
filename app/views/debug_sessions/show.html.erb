@@ -2,13 +2,13 @@
 <%= turbo_stream_from Debug::SessionBroadcaster::STREAM, channel: "DebugChannel" %>
 
 <%
-  active    = @client.present?
-  repo_path = @client&.repo_path
+  active    = @session.attached?
+  repo_path = @session.client&.repo_path
 %>
 
 <%# Session state + attach live in the layout's header, alongside the wordmark. %>
 <% content_for :header_actions do %>
-  <%= render Debug::StatusComponent.new(state: (active ? @client.state : "idle"), client: @client) %>
+  <%= render Debug::StatusComponent.new(state: (active ? @session.state : "idle"), client: @session.client) %>
   <% unless active %>
     <%= render "debug_sessions/connect_drawer" %>
   <% end %>
@@ -50,7 +50,7 @@
     <% if active %>
       <%= render "debug_sessions/gutter", axis: "row", variable: "--repl-h", edge: "bottom", min: 80 %>
 
-      <%= render Debug::ReplComponent.new(stopped: @client.state == :stopped) %>
+      <%= render Debug::ReplComponent.new(stopped: @session.state == :stopped) %>
     <% end %>
   </div>
 </div>

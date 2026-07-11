@@ -44,14 +44,15 @@ class SessionTest < ActiveSupport::TestCase
   # --- lifecycle -------------------------------------------------------------
 
   test "no session is attached by default" do
-    assert_nil Debug::Session.current
+    refute Debug::Session.current.attached?
     refute Debug::Session.attached?
   end
 
-  test "current exposes the attached client" do
+  test "current wraps the attached client" do
     client = attach(FakeClient.new)
 
-    assert_same client, Debug::Session.current
+    assert_same client, Debug::Session.current.client
+    assert Debug::Session.current.attached?
     assert Debug::Session.attached?
   end
 
@@ -95,7 +96,7 @@ class SessionTest < ActiveSupport::TestCase
     test "#{command.inspect} drives the client's #{method}" do
       client = attach(FakeClient.new)
 
-      assert Debug::Session.step(command)
+      assert Debug::Session.current.step(command)
       assert_equal [method], client.commands
     end
   end
@@ -103,12 +104,12 @@ class SessionTest < ActiveSupport::TestCase
   test "an unknown command drives nothing" do
     client = attach(FakeClient.new)
 
-    refute Debug::Session.step("rewind")
+    refute Debug::Session.current.step("rewind")
     assert_empty client.commands
   end
 
   test "stepping without a session drives nothing" do
-    refute Debug::Session.step("continue")
+    refute Debug::Session.current.step("continue")
   end
 
   # --- panels ----------------------------------------------------------------
@@ -116,35 +117,35 @@ class SessionTest < ActiveSupport::TestCase
   test "panels focus the requested frame of the current stop" do
     attach(FakeClient.new(snapshot: SNAPSHOT))
 
-    assert_equal 1, Debug::Session.panels(frame: "1").first.frame_index
+    assert_equal 1, Debug::Session.current.panels(frame: "1").first.frame_index
   end
 
   test "a frame beyond the stack clamps to the deepest one" do
     attach(FakeClient.new(snapshot: SNAPSHOT))
 
-    assert_equal 1, Debug::Session.panels(frame: "99").first.frame_index
+    assert_equal 1, Debug::Session.current.panels(frame: "99").first.frame_index
   end
 
   test "a negative frame clamps to the top of the stack" do
     attach(FakeClient.new(snapshot: SNAPSHOT))
 
-    assert_equal 0, Debug::Session.panels(frame: "-3").first.frame_index
+    assert_equal 0, Debug::Session.current.panels(frame: "-3").first.frame_index
   end
 
   test "a frameless stop clamps to zero rather than to -1" do
     attach(FakeClient.new(snapshot: {reason: "breakpoint", frames: []}))
 
-    assert_equal 0, Debug::Session.panels(frame: "2").first.frame_index
+    assert_equal 0, Debug::Session.current.panels(frame: "2").first.frame_index
   end
 
   test "there are no panels without a stop to inspect" do
     attach(FakeClient.new(snapshot: nil))
 
-    assert_nil Debug::Session.panels(frame: "0")
+    assert_nil Debug::Session.current.panels(frame: "0")
   end
 
   test "there are no panels without a session" do
-    assert_nil Debug::Session.panels(frame: "0")
+    assert_nil Debug::Session.current.panels(frame: "0")
   end
 
   # --- expanding locals ------------------------------------------------------
@@ -152,7 +153,7 @@ class SessionTest < ActiveSupport::TestCase
   test "expanding a local fetches its children from the client" do
     client = attach(FakeClient.new(state: :stopped))
 
-    assert_equal [{name: "@a", value: "1"}], Debug::Session.expand("42")
+    assert_equal [{name: "@a", value: "1"}], Debug::Session.current.expand("42")
     assert_equal 42, client.expanded
   end
 
@@ -160,17 +161,17 @@ class SessionTest < ActiveSupport::TestCase
   test "a local cannot be expanded while the debuggee is running" do
     attach(FakeClient.new(state: :running))
 
-    assert_nil Debug::Session.expand("42")
+    assert_nil Debug::Session.current.expand("42")
   end
 
   test "a scalar local has no children to expand" do
     attach(FakeClient.new(state: :stopped))
 
-    assert_nil Debug::Session.expand("0")
+    assert_nil Debug::Session.current.expand("0")
   end
 
   test "nothing can be expanded without a session" do
-    assert_nil Debug::Session.expand("42")
+    assert_nil Debug::Session.current.expand("42")
   end
 
   # --- evaluating ------------------------------------------------------------
@@ -178,7 +179,7 @@ class SessionTest < ActiveSupport::TestCase
   test "an expression is evaluated in the selected frame" do
     client = attach(FakeClient.new(snapshot: SNAPSHOT))
 
-    Debug::Session.evaluate("user.name", frame: "1")
+    Debug::Session.current.evaluate("user.name", frame: "1")
 
     assert_equal({expression: "user.name", frame_id: 22}, client.evaluated)
   end
@@ -186,7 +187,7 @@ class SessionTest < ActiveSupport::TestCase
   test "an out-of-range frame evaluates in the deepest frame" do
     client = attach(FakeClient.new(snapshot: SNAPSHOT))
 
-    Debug::Session.evaluate("1 + 1", frame: "99")
+    Debug::Session.current.evaluate("1 + 1", frame: "99")
 
     assert_equal 22, client.evaluated[:frame_id]
   end
@@ -196,7 +197,7 @@ class SessionTest < ActiveSupport::TestCase
   test "evaluating away from a breakpoint returns a console-style error" do
     attach(FakeClient.new(state: :running, snapshot: SNAPSHOT))
 
-    result = Debug::Session.evaluate("1 + 1", frame: "0")
+    result = Debug::Session.current.evaluate("1 + 1", frame: "0")
 
     assert result[:error]
     assert_equal 0, result[:ref]
@@ -204,7 +205,7 @@ class SessionTest < ActiveSupport::TestCase
   end
 
   test "evaluating without a session returns a console-style error" do
-    assert Debug::Session.evaluate("1 + 1", frame: "0")[:error]
+    assert Debug::Session.current.evaluate("1 + 1", frame: "0")[:error]
   end
 
   # --- encapsulation ---------------------------------------------------------

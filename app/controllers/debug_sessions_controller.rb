@@ -1,13 +1,12 @@
 class DebugSessionsController < ApplicationController
   def show
-    @client = Debug::Session.current
-    @snapshot = @client&.snapshot
+    @snapshot = @session.snapshot
   end
 
   def create
     client = Debug::Session.attach(
       host: connect_params[:host], port: connect_params[:port], repo_path: connect_params[:repo_path]
-    )
+    ).client
     redirect_to root_path,
       notice: "Attached to #{client.host}:#{client.port}. Trigger a request to hit the breakpoint."
   rescue Debug::Session::AlreadyAttached
