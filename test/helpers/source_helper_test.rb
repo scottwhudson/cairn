@@ -92,7 +92,7 @@ class SourceHelperTest < ActionView::TestCase
   # inspect strings lead with `#<`, which the Ruby lexer reads as a comment; the
   # value scanner classifies the shapes inspect actually emits instead.
   test "an inspect string is scanned rather than lexed as a comment" do
-    html = highlight_value(%q{#<User:0x0000abcd @id=1>})
+    html = highlight_value("#<User:0x0000abcd @id=1>")
 
     assert_includes html, %(<span class="nc">User</span>)
     assert_includes html, %(<span class="vi">@id</span>)
@@ -101,11 +101,11 @@ class SourceHelperTest < ActionView::TestCase
   # The 0x address is the reason a value can't be compared across stops, so it's
   # dimmed as a comment rather than shown as identifying detail.
   test "an object address is dimmed as a comment" do
-    assert_includes highlight_value(%q{#<User:0x0000abcd>}), %(<span class="c">:0x0000abcd</span>)
+    assert_includes highlight_value("#<User:0x0000abcd>"), %(<span class="c">:0x0000abcd</span>)
   end
 
   test "a bare string value keeps its string coloring" do
-    assert_equal %(<span class="s2">"draft"</span>), highlight_value(%q{"draft"})
+    assert_equal %(<span class="s2">"draft"</span>), highlight_value('"draft"')
   end
 
   test "an empty value is not highlighted" do
