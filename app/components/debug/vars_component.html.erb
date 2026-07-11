@@ -1,5 +1,5 @@
 <% if vars.blank? %>
-  <p class="px-3 py-1.5 text-xs text-slate-600">(empty)</p>
+  <p class="px-3 py-1.5 text-xs text-zinc-600">(empty)</p>
 <% else %>
   <% vars.each do |var| %><%= render Debug::VarComponent.new(var: var) %><% end %>
 <% end %>

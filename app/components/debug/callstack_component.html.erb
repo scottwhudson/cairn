@@ -1,16 +1,26 @@
 <div id="<%= id %>" class="min-h-0 overflow-y-auto" data-controller="frame-filter">
-  <div class="sticky top-0 z-10 flex h-10 items-center border-b border-slate-800 bg-slate-900/90 px-3">
-    <h2 class="text-xs font-semibold uppercase tracking-wide text-slate-400">Call stack</h2>
+  <div class="sticky top-0 z-10 flex h-10 items-center border-b border-zinc-800 bg-zinc-900/90 px-3">
+    <h2 class="text-xs font-semibold uppercase tracking-wide text-zinc-400">Call stack</h2>
     <% if filterable? %>
-      <button type="button" aria-pressed="false"
-              data-action="frame-filter#toggle" data-frame-filter-target="toggle"
-              title="Hide frames from gems and the framework"
-              class="ml-auto rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-300 aria-pressed:bg-sky-500/15 aria-pressed:text-sky-300">app only</button>
+      <div class="ml-auto flex items-center gap-0.5 rounded bg-zinc-800/60 p-0.5 text-[10px] font-semibold uppercase tracking-wide">
+        <button type="button" data-mode="all" aria-pressed="true"
+                data-action="frame-filter#select" data-frame-filter-target="button"
+                title="Show every frame"
+                class="rounded px-1.5 py-0.5 text-zinc-500 transition-colors hover:text-zinc-300 aria-pressed:bg-zinc-700 aria-pressed:text-zinc-100">all</button>
+        <button type="button" data-mode="app" aria-pressed="false"
+                data-action="frame-filter#select" data-frame-filter-target="button"
+                title="Show only application frames"
+                class="rounded px-1.5 py-0.5 text-zinc-500 transition-colors hover:text-zinc-300 aria-pressed:bg-zinc-700 aria-pressed:text-zinc-100">app</button>
+        <button type="button" data-mode="non-app" aria-pressed="false"
+                data-action="frame-filter#select" data-frame-filter-target="button"
+                title="Show only frames from gems and the framework"
+                class="rounded px-1.5 py-0.5 text-zinc-500 transition-colors hover:text-zinc-300 aria-pressed:bg-zinc-700 aria-pressed:text-zinc-100">non-app</button>
+      </div>
     <% end %>
   </div>
 
   <% if frames.blank? %>
-    <p class="px-3 py-3 text-xs text-slate-500">No active frame. Attach and step to a breakpoint.</p>
+    <p class="px-3 py-3 text-xs text-zinc-500">No active frame. Attach and step to a breakpoint.</p>
   <% else %>
     <ol class="px-2 py-2 text-xs">
       <% frames.each_with_index do |frame, i| %>
@@ -19,20 +29,20 @@
                   data-action="stepper#selectFrame"
                   data-stepper-frame-param="<%= i %>"
                   class="<%= frame_classes(i) %>">
-            <span class="w-4 shrink-0 self-center text-sky-400"><%= helpers.icon "chevron_right", class: "h-3.5 w-3.5" if selected?(i) %></span>
+            <span class="w-4 shrink-0 self-center text-red-400"><%= helpers.icon "chevron_right", class: "h-3.5 w-3.5" if selected?(i) %></span>
             <div class="min-w-0">
-              <div class="truncate font-medium <%= selected?(i) ? "text-slate-100" : "text-slate-300" %>"><%= frame[:name] %></div>
-              <div class="truncate font-mono text-[11px] text-slate-500"><%= rel_path(frame) %>:<%= frame[:line] %></div>
+              <div class="truncate font-medium <%= selected?(i) ? "text-zinc-100" : "text-zinc-300" %>"><%= frame[:name] %></div>
+              <div class="truncate font-mono text-[11px] text-zinc-500"><%= rel_path(frame) %>:<%= frame[:line] %></div>
             </div>
           </button>
         </li>
       <% end %>
     </ol>
 
-    <%# Every frame filtered away: the stack is entirely gem/framework code. %>
-    <p data-frame-filter-target="empty" class="hidden px-3 pb-3 text-xs text-slate-500">
-      No app frames in this stack.
-      <button type="button" data-action="frame-filter#toggle" class="text-sky-400 hover:text-sky-300">Show all</button>
+    <%# Every frame filtered away: nothing in this stack matches the filter. %>
+    <p data-frame-filter-target="empty" class="hidden px-3 pb-3 text-xs text-zinc-500">
+      No matching frames in this stack.
+      <button type="button" data-mode="all" data-action="frame-filter#select" class="text-red-400 hover:text-red-300">Show all</button>
     </p>
   <% end %>
 </div>

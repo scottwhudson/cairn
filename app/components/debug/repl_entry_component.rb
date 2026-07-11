@@ -14,7 +14,7 @@ module Debug
 
     def error? = result[:error]
 
-    def border_class = error? ? "border-rose-700/60" : "border-slate-700/70"
+    def border_class = error? ? "border-rose-700/60" : "border-zinc-700/70"
 
     # nil when the expression can't be highlighted; the row falls back to plain text.
     def echoed

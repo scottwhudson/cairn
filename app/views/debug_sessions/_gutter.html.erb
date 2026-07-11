@@ -1,7 +1,7 @@
 <%# locals: (axis:, variable:, edge:, min: 120) %>
 <%# A draggable divider between two grid panels. The track is a 1px hairline
     flush against the panels on either side, but pitched brighter than the static
-    slate-800 borders around it — the extra contrast is what marks it as a handle
+    zinc-800 borders around it — the extra contrast is what marks it as a handle
     rather than a seam. The grab area is an overlay that hangs over both
     neighbours — it needs no track width of its own, and sits above the sticky
     panel headers (z-10) so it stays grabbable next to them.
@@ -9,7 +9,7 @@
     Drag to resize, double-click to restore the default. `axis` is the divider's
     own orientation: a "col" gutter is a vertical line you drag sideways. %>
 <% col = axis.to_s == "col" %>
-<div class="relative bg-slate-400 transition-colors hover:bg-sky-300 active:bg-sky-200 <%= col ? "w-px cursor-col-resize" : "h-px cursor-row-resize" %>"
+<div class="relative bg-zinc-400 transition-colors hover:bg-red-300 active:bg-red-200 <%= col ? "w-px cursor-col-resize" : "h-px cursor-row-resize" %>"
      data-controller="splitter"
      data-splitter-variable-value="<%= variable %>"
      data-splitter-edge-value="<%= edge %>"

@@ -39,7 +39,7 @@ module Debug
     def raised? = snapshot[:reason].to_s == "exception"
 
     def reason_classes
-      raised? ? "bg-rose-500/20 text-rose-300" : "bg-sky-500/20 text-sky-300"
+      raised? ? "bg-rose-500/20 text-rose-300" : "bg-red-500/20 text-red-300"
     end
   end
 end

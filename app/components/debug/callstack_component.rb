@@ -1,6 +1,6 @@
 module Debug
   # Right panel (top): call stack at the current stop. Click a frame to inspect it.
-  # The "app only" toggle hides gem and framework frames — see frame_filter.
+  # The all/app/non-app filter narrows which frames show — see frame_filter.
   class CallstackComponent < ApplicationComponent
     ID = "callstack-panel".freeze
 
@@ -38,7 +38,7 @@ module Debug
 
     def frame_classes(index)
       base = "flex w-full items-baseline gap-2 rounded px-2 py-1 text-left "
-      base + (selected?(index) ? "bg-slate-800" : "hover:bg-slate-800/50")
+      base + (selected?(index) ? "bg-zinc-800" : "hover:bg-zinc-800/50")
     end
   end
 end

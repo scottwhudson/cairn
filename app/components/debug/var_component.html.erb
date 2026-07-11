@@ -1,5 +1,5 @@
 <div>
-  <div class="flex items-baseline gap-1.5 px-3 py-1 hover:bg-slate-800/40">
+  <div class="flex items-baseline gap-1.5 px-3 py-1 hover:bg-zinc-800/40">
     <% if expandable? %>
       <%# The row hands stepper#toggleLocal both the url that fills its container
           and the container's id, so neither is rebuilt in JS. %>
@@ -8,15 +8,15 @@
               data-stepper-container-param="<%= children_id %>"
               data-stepper-url-param="<%= debug_session_local_path(ref) %>"
               aria-expanded="false"
-              class="shrink-0 select-none text-slate-500 transition-transform hover:text-slate-300 aria-expanded:rotate-90"><%= helpers.icon "chevron_right", class: "h-3.5 w-3.5" %></button>
+              class="shrink-0 select-none text-zinc-500 transition-transform hover:text-zinc-300 aria-expanded:rotate-90"><%= helpers.icon "chevron_right", class: "h-3.5 w-3.5" %></button>
     <% else %>
       <span class="w-[1ch] shrink-0"></span>
     <% end %>
-    <span class="shrink-0 font-mono text-slate-300"><%= name %></span>
+    <span class="shrink-0 font-mono text-zinc-300"><%= name %></span>
     <span class="inline-block max-h-40 overflow-y-auto font-mono break-all whitespace-pre-wrap <%= value_class %>"><%= value_text %></span>
-    <% if type.present? %><span class="ml-auto shrink-0 text-[10px] text-slate-600"><%= type %></span><% end %>
+    <% if type.present? %><span class="ml-auto shrink-0 text-[10px] text-zinc-600"><%= type %></span><% end %>
   </div>
   <% if expandable? %>
-    <div id="<%= children_id %>" class="ml-3 hidden border-l border-slate-800 pl-1"></div>
+    <div id="<%= children_id %>" class="ml-3 hidden border-l border-zinc-800 pl-1"></div>
   <% end %>
 </div>

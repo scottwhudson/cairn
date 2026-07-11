@@ -1,0 +1,13 @@
+# Cairn session defaults. Copy to `.cairnrc` (in the Cairn app root or your home
+# directory), or point $CAIRNRC at it, and the connect form pre-fills on boot.
+# Every key is optional. YAML.
+
+# Host of the target's rdbg DAP server.
+host: "127.0.0.1"
+
+# Port the target was opened on: `rdbg --open --port <PORT> --nonstop ...`.
+port: 12345
+
+# The debuggee's source root. Lets the call stack tell your code from gem code
+# and shortens paths for display. Omit to leave it blank.
+# repo_path: "/Users/you/code/target-app"

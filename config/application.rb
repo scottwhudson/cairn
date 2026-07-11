@@ -1,6 +1,17 @@
 require_relative "boot"
 
-require "rails/all"
+# This app has no database. We load the individual Rails railties instead of
+# "rails/all" so that Active Record (and the engines that depend on it —
+# Active Storage, Action Text, Action Mailbox) are never required.
+require "rails"
+
+require "active_model/railtie"
+require "active_job/railtie"
+require "action_controller/railtie"
+require "action_mailer/railtie"
+require "action_view/railtie"
+require "action_cable/engine"
+require "rails/test_unit/railtie"
 
 # Require the gems listed in Gemfile, including any gems
 # you've limited to :test, :development, or :production.
