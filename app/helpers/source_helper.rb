@@ -13,7 +13,8 @@ module SourceHelper
     return [] unless abs_path && File.file?(abs_path)
 
     source = File.read(abs_path)
-    text_lines = source.split("\n", -1)
+    # String#split returns [] for "", but an empty file is one blank line, not zero.
+    text_lines = source.empty? ? [""] : source.split("\n", -1)
     # split's trailing "" from a final newline isn't a real line — drop it so the
     # line count matches File.readlines.
     text_lines.pop if text_lines.size > 1 && text_lines.last == ""
