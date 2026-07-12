@@ -1,10 +1,5 @@
 #!/usr/bin/env sh
 
-if ! gem list foreman -i --silent; then
-  echo "Installing foreman..."
-  gem install foreman
-fi
-
 # Fail fast if the committed Tailwind CSS is stale before booting the server
 if ! bin/rails tailwindcss:verify; then
   echo "Tailwind verification failed. Aborting." >&2
@@ -19,4 +14,4 @@ export PORT="${PORT:-3001}"
 export RUBY_DEBUG_OPEN="true"
 export RUBY_DEBUG_LAZY="true"
 
-exec foreman start -f Procfile.dev "$@"
+exec bin/rails server

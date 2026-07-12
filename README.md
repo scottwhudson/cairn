@@ -79,7 +79,7 @@ Tailwind is a **build-time-only** tool here. The compiled stylesheet is committe
 as a static asset (`app/assets/builds/tailwind.css`) and served as-is in every
 environment — production never runs the compiler. Accordingly, `tailwindcss-rails`
 lives in the `:development, :test` group of the `Gemfile`, and there's no CSS
-watcher process in `Procfile.dev`.
+watcher process to run alongside the server — `bin/dev` just boots Rails.
 
 If you change the templates, regenerate and commit the CSS:
 

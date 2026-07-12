@@ -30,6 +30,9 @@
 
 /public/assets
 
+# CI (ruby/setup-ruby with bundler-cache) installs gems here, inside the working tree.
+/vendor/bundle
+
 # Ignore key files for decrypting credentials and more.
 /config/*.key
 
