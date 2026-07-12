@@ -1,8 +1,1 @@
-/* source(none) disables Tailwind's automatic source detection, which walks the whole
-   project and scans anything not gitignored — including vendor/bundle, where CI's
-   bundler installs gems. Scanning only app/ makes the generated CSS a function of our
-   own templates, so a rebuild matches the committed file regardless of what else is
-   sitting in the working tree. */
-@import "tailwindcss" source(none);
-
-@source "../../../app";
+@import "tailwindcss";
